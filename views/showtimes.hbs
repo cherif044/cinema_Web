@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Showtimes</title>
+
+  <!-- Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --grad: linear-gradient(90deg, #003366, #004080, #0059b3, #0073e6);
+      --accent: #1a75ff;
+    }
+
+    *{ font-family: 'Poppins', sans-serif; }
+
+    body{
+      min-height: 100vh;
+      background: var(--grad);
+      color: #111;
+    }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--grad);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    .brand{
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      font-size: 1.4rem;
+      color: #fff;
+      margin: 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .page-shell{
+      background: rgba(255,255,255,0.92);
+      border-radius: 18px;
+      box-shadow: 0px 15px 20px rgba(0,0,0,0.12);
+      padding: 18px;
+    }
+
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(26,117,255,0.10);
+      color: #0b3ea8;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .status-box{
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: #fff;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.10);
+    }
+
+    .show-card{
+      border: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.10);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+      cursor: pointer;
+      height: 100%;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .show-card:hover{
+      transform: translateY(-6px);
+      box-shadow: 0 18px 30px rgba(0,0,0,0.18);
+    }
+
+    .poster-wrap{
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      background: #0b1b2b10;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .poster{
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .show-body{
+      padding: 12px 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1 1 auto;
+    }
+
+    .movie-title{
+      font-weight: 800;
+      font-size: 1.0rem;
+      margin: 0;
+      color: #0b1b2b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-list{
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .info-item{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 12px;
+      border-radius: 14px;
+
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(14px) saturate(180%);
+      -webkit-backdrop-filter: blur(14px) saturate(180%);
+
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.45),
+        0 4px 10px rgba(0,0,0,0.08);
+
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .info-item:hover{
+      background: rgba(255, 255, 255, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .info-item i{
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+
+      display: grid;
+      place-items: center;
+
+      background: rgba(26, 117, 255, 0.18);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+
+      color: #0b3ea8;
+      font-size: 0.95rem;
+      flex: 0 0 auto;
+
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    .info-item .k{
+      font-size: 0.72rem;
+      color: #475569;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .info-item .v{
+      font-size: 0.88rem;
+      color: #0b1b2b;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .footer-line{
+      color: #64748b;
+      font-size: .84rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tag{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(26,117,255,0.10);
+      color: #0b3ea8;
+      font-weight: 700;
+      font-size: 0.78rem;
+      border: 1px solid rgba(26,117,255,0.18);
+    }
+
+    @media (max-width: 576px){
+      .brand{ font-size: 1.15rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="container py-3 d-flex align-items-center justify-content-between gap-2 flex-wrap">
+      <h1 class="brand" id="goBack" title="Back to cinemas">Chinema</h1>
+
+      <span class="pill text-white" style="background: rgba(255,255,255,0.15);">
+        <i class="bi bi-film"></i>
+        Showtimes
+      </span>
+    </div>
+  </div>
+
+  <main class="container my-4 my-md-5">
+    <div class="page-shell">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <h2 class="m-0 fw-bold" style="color:#0b1b2b;" id="pageTitle">Showtimes</h2>
+          <div class="text-secondary" id="pageSub">Next 48 hours (starting +5 mins)</div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <button id="refreshBtn" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div id="statusArea" class="mb-3"></div>
+      <div id="showGrid" class="row g-3"></div>
+    </div>
+  </main>
+
+  <script>
+    const grid = document.getElementById("showGrid");
+    const statusArea = document.getElementById("statusArea");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const pageTitle = document.getElementById("pageTitle");
+    const pageSub = document.getElementById("pageSub");
+    const goBack = document.getElementById("goBack");
+
+    const SHOWTIMES_API = "/retrieve_showtimes";
+    const FALLBACK_POSTER = "https://via.placeholder.com/800x1200?text=Poster";
+    const LOGIN_PAGE = "/home.html";
+
+    goBack.addEventListener("click", () => {
+      window.location.href = "/show_cinemas";
+    });
+
+    function setStatus(type, message) {
+      if (!message) { statusArea.innerHTML = ""; return; }
+      const icon = type === "error" ? "bi-exclamation-triangle" : "bi-info-circle";
+      const color = type === "error" ? "danger" : "primary";
+      statusArea.innerHTML = `
+        <div class="status-box border-start border-4 border-${color}">
+          <div class="d-flex align-items-start gap-2">
+            <i class="bi ${icon} fs-5 text-${color}"></i>
+            <div>${message}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function getParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    function fmtTime(isoOrDate) {
+      const d = new Date(isoOrDate);
+      if (Number.isNaN(d.getTime())) return "—";
+      return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(d);
+    }
+
+    function fmtDate(isoOrDate) {
+      const d = new Date(isoOrDate);
+      if (Number.isNaN(d.getTime())) return "";
+      return new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "2-digit" }).format(d);
+    }
+
+    // ✅ NO CALC: use API-ready fields directly
+    function seatsFromApi(st) {
+      const total = Number(st.hall_capacity_active);
+      const left  = Number(st.available_active);
+
+      return {
+        total: Number.isFinite(total) ? total : null,
+        left:  Number.isFinite(left)  ? left  : null,
+      };
+    }
+
+    function showCard(st) {
+      const movie = st.Movie || {};
+      const cinema = st.Cinema || {};
+      const hall = st.Hall || {};
+
+      const title = movie.movie_name || "Movie";
+      const poster = movie.poster_url || FALLBACK_POSTER;
+
+      const start = st.start_time;
+      const end = st.end_time;
+      const duration = movie.duration_mins ?? "—";
+
+      const cinemaType = hall.type || "Standard";
+
+      const seats = seatsFromApi(st);
+      const seatsText = (seats.left === null || seats.total === null)
+        ? `?/?`
+        : `${seats.left}/${seats.total}`;
+
+      const col = document.createElement("div");
+      col.className = "col-12 col-sm-6 col-md-4 col-lg-3";
+
+      col.innerHTML = `
+        <div class="show-card" role="button" tabindex="0" data-showtime-id="${escapeHtml(st.showtime_id)}">
+          <div class="poster-wrap">
+            <img class="poster" src="${escapeHtml(poster)}" alt="${escapeHtml(title)} poster"
+              onerror="this.onerror=null;this.src='${FALLBACK_POSTER}'">
+          </div>
+
+          <div class="show-body">
+            <h3 class="movie-title">
+              <i class="bi bi-camera-reels-fill" style="color: var(--accent);"></i>
+              <span>${escapeHtml(title)}</span>
+            </h3>
+
+            <ul class="info-list">
+              <li class="info-item">
+                <i class="bi bi-play-circle-fill"></i>
+                <div>
+                  <div class="k">Starts</div>
+                  <div class="v">${fmtTime(start)} <span class="text-secondary fw-semibold" style="font-size:.82rem;">${fmtDate(start)}</span></div>
+                </div>
+              </li>
+
+              <li class="info-item">
+                <i class="bi bi-stop-circle-fill"></i>
+                <div>
+                  <div class="k">Ends</div>
+                  <div class="v">${fmtTime(end)} <span class="text-secondary fw-semibold" style="font-size:.82rem;">${fmtDate(end)}</span></div>
+                </div>
+              </li>
+
+              <li class="info-item">
+                <i class="bi bi-hourglass-split"></i>
+                <div>
+                  <div class="k">Duration</div>
+                  <div class="v">${escapeHtml(duration)} mins</div>
+                </div>
+              </li>
+
+              <li class="info-item">
+                <i class="bi bi-people-fill"></i>
+                <div>
+                  <div class="k">Seats Left</div>
+                  <div class="v">${seatsText}</div>
+                </div>
+              </li>
+            </ul>
+
+            <div class="footer-line">
+              <span class="tag">
+                <i class="bi bi-stars"></i>
+                ${escapeHtml(cinemaType)}
+              </span>
+
+              <span>
+                <i class="bi bi-geo-alt-fill" style="color: var(--accent);"></i>
+                ${escapeHtml(cinema.cinema_name || "Cinema")}
+                ${cinema.location ? ` · ${escapeHtml(cinema.location)}` : ""}
+                ${st.hall_id ? ` · <span class="fw-semibold">Hall ${escapeHtml(st.hall_id)}</span>` : ""}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const card = col.querySelector(".show-card");
+      card.addEventListener("click", () => {
+        const id = st.showtime_id;
+        if (!id) return;
+        window.location.href = `/seat_select?showtime_id=${encodeURIComponent(id)}`;
+      });
+
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") card.click();
+      });
+
+      return col;
+    }
+
+    async function loadShowtimes() {
+      const cinema_id = Number(getParam("cinema_id"));
+      if (!cinema_id || Number.isNaN(cinema_id)) {
+        setStatus("error", "Missing cinema_id in URL. Example: /showtimes.html?cinema_id=1");
+        return;
+      }
+
+      setStatus("info", "Loading showtimes...");
+      grid.innerHTML = "";
+
+      try {
+        const url = `${SHOWTIMES_API}?cinema_id=${encodeURIComponent(cinema_id)}`;
+        const res = await fetch(url, {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "Accept": "application/json" }
+        });
+
+        if (res.status === 401) {
+          window.location.href = LOGIN_PAGE;
+          return;
+        }
+
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setStatus("error", payload?.message || `Request failed (${res.status})`);
+          return;
+        }
+
+        const showtimes = payload?.data || [];
+        if (!Array.isArray(showtimes) || showtimes.length === 0) {
+          setStatus("info", "No showtimes in the next 48 hours for this cinema.");
+          return;
+        }
+
+        const firstCinema = showtimes[0]?.Cinema;
+        if (firstCinema?.cinema_name) {
+          pageTitle.textContent = `Showtimes • ${firstCinema.cinema_name}`;
+          pageSub.textContent = `Next 48 hours (starting +5 mins)${firstCinema.location ? ` • ${firstCinema.location}` : ""}`;
+        }
+
+        showtimes.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+        const byMovie = new Map();
+        for (const st of showtimes) {
+          const mid = st.Movie?.movie_id ?? st.movie_id;
+          if (!mid) continue;
+          if (!byMovie.has(mid)) byMovie.set(mid, st);
+        }
+
+        const uniqueMovies = Array.from(byMovie.values());
+
+        setStatus("", "");
+        uniqueMovies.forEach(st => grid.appendChild(showCard(st)));
+      } catch (err) {
+        console.error(err);
+        setStatus("error", "Server/network error while loading showtimes.");
+      }
+    }
+
+    refreshBtn.addEventListener("click", loadShowtimes);
+    loadShowtimes();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

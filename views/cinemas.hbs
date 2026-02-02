@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Cinema</title>
+
+  <!-- Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --grad: linear-gradient(90deg, #003366, #004080, #0059b3, #0073e6);
+      --accent: #1a75ff;
+    }
+
+    *{ font-family: 'Poppins', sans-serif; }
+
+    body{
+      min-height: 100vh;
+      background: var(--grad);
+      color: #111;
+    }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--grad);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    .brand{
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      font-size: 1.4rem;
+      color: #fff;
+      margin: 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .page-shell{
+      background: rgba(255,255,255,0.92);
+      border-radius: 18px;
+      box-shadow: 0px 15px 20px rgba(0,0,0,0.12);
+      padding: 18px;
+    }
+
+    .cinema-card{
+      border: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.10);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+      cursor: pointer;
+      height: 100%;
+      background: #fff;
+    }
+
+    .cinema-card:hover{
+      transform: translateY(-6px);
+      box-shadow: 0 18px 30px rgba(0,0,0,0.18);
+    }
+
+    /* Image fills frame (zoom/crop) */
+    .cinema-img-wrap{
+      height: 170px;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    .cinema-img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;       /* zoom until fills */
+      object-position: center; /* crop from center */
+      display: block;
+    }
+
+    .cinema-body{
+      padding: 14px 14px 16px;
+      background: #fff;
+    }
+
+    .cinema-name{
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+      color: #0b1b2b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cinema-location{
+      margin: 0;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    /* ✅ NEW: location hyperlink row (same vibe as other rows) */
+    .cinema-maprow{
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #1a75ff;
+      text-decoration: none;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 160ms ease, color 160ms ease;
+    }
+
+    .cinema-maprow:hover{
+      color: #004ecb;
+      text-decoration: underline;
+      transform: translateY(-1px);
+    }
+
+    .cinema-maprow i{
+      color: #1a75ff;
+    }
+
+    .cinema-maprow.disabled{
+      opacity: .55;
+      cursor: default;
+      text-decoration: none;
+      transform: none;
+      pointer-events: none;
+      color: #6b7a90;
+    }
+
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(26,117,255,0.10);
+      color: #0b3ea8;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .status-box{
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: #fff;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.10);
+    }
+
+    @media (max-width: 576px){
+      .brand{ font-size: 1.15rem; }
+      .cinema-img-wrap{ height: 140px; }
+    }
+
+    /* =========================
+       GLASS BUTTONS
+    ========================= */
+    .glass-btn{
+      border-radius: 999px !important;
+      border: 1px solid rgba(255,255,255,0.20) !important;
+      background: rgba(255,255,255,0.12) !important;
+      backdrop-filter: blur(12px) saturate(160%);
+      -webkit-backdrop-filter: blur(12px) saturate(160%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        0 10px 18px rgba(0,0,0,0.12);
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease;
+      color: #fff !important;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .glass-btn:hover{
+      transform: translateY(-3px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.26),
+        0 16px 26px rgba(0,0,0,0.16);
+    }
+
+    .glass-btn:active{
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 10px 16px rgba(0,0,0,0.12);
+    }
+
+    .glass-btn, .glass-btn:hover, .glass-btn:focus{
+      color: #fff !important;
+    }
+
+    /* =========================
+       REGISTRATIONS OVERLAY + PANEL
+    ========================= */
+    .regs-overlay{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.38);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+      display: none;
+      z-index: 5000;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .regs-overlay.open{
+      display: block;
+      opacity: 1;
+    }
+
+    .regs-panel{
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: min(760px, calc(100vw - 28px));
+      max-height: calc(100vh - 28px);
+      border-radius: 22px;
+      background: rgba(36,40,45,0.86);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.50);
+      overflow: hidden;
+
+      transform-origin: var(--origin-x, 90%) var(--origin-y, 10%);
+      transform: translateY(-10px) scale(0.92);
+      opacity: 0;
+      transition: transform 240ms cubic-bezier(.2,.8,.2,1), opacity 240ms ease;
+    }
+
+    .regs-overlay.open .regs-panel{
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    .regs-header{
+      padding: 14px 14px 12px;
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      color: #fff;
+    }
+
+    .regs-head-left{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .regs-pill{
+      width: 40px;
+      height: 40px;
+      border-radius: 15px;
+      display:grid;
+      place-items:center;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+      flex: 0 0 auto;
+    }
+
+    .regs-title{
+      font-weight: 900;
+      letter-spacing: .2px;
+      line-height: 1.1;
+    }
+
+    .regs-sub{
+      color: rgba(255,255,255,0.65);
+      font-size: .90rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 420px;
+    }
+
+    .regs-body{
+      padding: 14px;
+      overflow: auto;
+      max-height: calc(100vh - 88px);
+      display: grid;
+      gap: 12px;
+    }
+
+    .regs-card{
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+      transition: transform 160ms ease, box-shadow 160ms ease;
+      color: #fff;
+    }
+
+    .regs-card:hover{
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 14px 28px rgba(0,0,0,0.20);
+    }
+
+    .regs-card-title{
+      margin: 0;
+      font-weight: 900;
+      font-size: 1.05rem;
+    }
+
+    .regs-chip{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(43,127,255,0.18);
+      border: 1px solid rgba(43,127,255,0.26);
+      color: rgba(255,255,255,0.92);
+      font-weight: 800;
+      font-size: .78rem;
+      white-space: nowrap;
+    }
+
+    .regs-meta{
+      margin-top: 8px;
+      color: rgba(233,238,245,0.78);
+      font-size: .92rem;
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items:center;
+    }
+
+    .regs-seats{
+      margin-top: 10px;
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .seat-tag{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.92);
+      font-weight: 800;
+      font-size: .80rem;
+      cursor: default;
+      user-select: none;
+    }
+
+    .regs-empty{
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+      border: 1px dashed rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.82);
+    }
+
+    /* =========================
+       CANCEL BUTTON (inside regs card)
+    ========================= */
+    .cancel-btn{
+      border-radius: 999px !important;
+      border: 1px solid rgba(255,255,255,0.18) !important;
+      background: rgba(255,255,255,0.10) !important;
+      backdrop-filter: blur(12px) saturate(150%);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      color: rgba(255,255,255,0.92) !important;
+      font-weight: 900;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 12px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 10px 18px rgba(0,0,0,0.16);
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease;
+      white-space: nowrap;
+    }
+
+    .cancel-btn:hover{
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.20),
+        0 16px 26px rgba(0,0,0,0.18);
+    }
+
+    .cancel-btn:active{ transform: translateY(-1px); }
+
+    /* =========================
+       CANCEL PICKER MODAL (inside regs overlay)
+    ========================= */
+    .cancel-modal{
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding: 14px;
+      background: rgba(0,0,0,0.20);
+      backdrop-filter: blur(10px) saturate(150%);
+      -webkit-backdrop-filter: blur(10px) saturate(150%);
+    }
+
+    .cancel-modal.open{ display:block; }
+
+    .cancel-sheet{
+      width: min(560px, calc(100% - 0px));
+      margin: 0 auto;
+      border-radius: 22px;
+      background: rgba(18,20,22,0.82);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 26px 70px rgba(0,0,0,0.55);
+      overflow: hidden;
+      transform: translateY(6px);
+      opacity: 0;
+      animation: sheetIn 240ms cubic-bezier(.2,.8,.2,1) forwards;
+    }
+
+    @keyframes sheetIn{
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .cancel-head{
+      padding: 14px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      color:#fff;
+    }
+
+    .cancel-title{
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+
+    .cancel-sub{
+      color: rgba(255,255,255,0.65);
+      font-size: .90rem;
+      margin-top: 2px;
+    }
+
+    .cancel-body{
+      padding: 14px;
+      color:#fff;
+      display:grid;
+      gap: 10px;
+    }
+
+    .seat-choice{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      cursor:pointer;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .seat-choice:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.10);
+    }
+
+    .seat-choice.active{
+      outline: 2px solid rgba(43,127,255,0.55);
+      background: rgba(43,127,255,0.16);
+    }
+
+    .seat-choice .left{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .seat-choice .pill{
+      background: rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.14);
+      font-weight: 900;
+      font-size: .78rem;
+      padding: 6px 10px;
+    }
+
+    .seat-choice .meta{
+      color: rgba(255,255,255,0.70);
+      font-size: .85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 260px;
+    }
+
+    .cancel-actions{
+      padding: 14px;
+      display:flex;
+      justify-content: flex-end;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .btn-darkglass{
+      border-radius: 999px !important;
+      border: 1px solid rgba(255,255,255,0.14) !important;
+      background: rgba(255,255,255,0.08) !important;
+      color: rgba(255,255,255,0.92) !important;
+      font-weight: 900;
+      padding: 10px 14px;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 10px 18px rgba(0,0,0,0.18);
+    }
+
+    .btn-darkglass:hover{ transform: translateY(-2px); }
+    .btn-darkglass:active{ transform: translateY(-1px); }
+
+    .btn-dangerglass{
+      background: rgba(220,38,38,0.18) !important;
+      border-color: rgba(220,38,38,0.25) !important;
+    }
+
+    /* Small toast */
+    .toastbox{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 9999;
+      width: min(420px, calc(100vw - 32px));
+      display: grid;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toastitem{
+      pointer-events: none;
+      border-radius: 16px;
+      padding: 12px 12px;
+      background: rgba(16,185,129,0.18);
+      border: 1px solid rgba(16,185,129,0.30);
+      color: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px) saturate(150%);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      box-shadow: 0 16px 30px rgba(0,0,0,0.22);
+      transform: translateY(8px);
+      opacity: 0;
+      animation: toastIn 220ms cubic-bezier(.2,.8,.2,1) forwards;
+    }
+
+    @keyframes toastIn{
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .toasttitle{
+      font-weight: 900;
+      letter-spacing: .2px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .toasttitle i{
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+
+    .toastmsg{
+      margin-top: 4px;
+      color: rgba(255,255,255,0.75);
+      font-size: .90rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="container py-3 d-flex align-items-center justify-content-between gap-2 flex-wrap">
+      <h1 class="brand">Chinema</h1>
+
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="pill text-white" style="background: rgba(255,255,255,0.15);">
+          <i class="bi bi-ticket-perforated"></i>
+          Choose a Cinema
+        </span>
+
+        <button id="regsBtn" class="btn glass-btn btn-sm">
+          <i class="bi bi-ticket-perforated"></i>
+          Show Registrations
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container my-4 my-md-5">
+    <div class="page-shell">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <h2 class="m-0 fw-bold" style="color:#0b1b2b;">Available Cinemas</h2>
+          <div class="text-secondary">Tap a cinema to view showtimes</div>
+        </div>
+
+        <button id="refreshBtn" class="btn btn-outline-primary rounded-pill px-3">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+
+      <div id="statusArea" class="mb-3"></div>
+      <div id="cinemaGrid" class="row g-3"></div>
+    </div>
+  </main>
+
+  <!-- Registrations Overlay -->
+  <div id="regsOverlay" class="regs-overlay" aria-hidden="true">
+    <div id="regsPanel" class="regs-panel" role="dialog" aria-modal="true" aria-label="My Registrations">
+      <div class="regs-header">
+        <div class="regs-head-left">
+          <div class="regs-pill"><i class="bi bi-ticket-perforated"></i></div>
+          <div style="min-width:0;">
+            <div class="regs-title">My Registrations</div>
+            <div class="regs-sub" id="regsSub">Loading…</div>
+          </div>
+        </div>
+
+        <button id="regsClose" class="btn glass-btn btn-sm" title="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div id="regsBody" class="regs-body"></div>
+
+      <!-- ✅ Cancel picker modal (inside overlay) -->
+      <div id="cancelModal" class="cancel-modal" aria-hidden="true">
+        <div class="cancel-sheet" role="dialog" aria-modal="true" aria-label="Cancel a seat">
+          <div class="cancel-head">
+            <div>
+              <div class="cancel-title">Cancel seat</div>
+              <div class="cancel-sub" id="cancelSub">Choose a seat to cancel</div>
+            </div>
+            <button id="cancelClose" class="btn-darkglass" type="button" title="Close">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <div class="cancel-body">
+            <div id="cancelList"></div>
+          </div>
+
+          <div class="cancel-actions">
+            <button id="cancelBack" class="btn-darkglass" type="button">
+              <i class="bi bi-arrow-left"></i> Back
+            </button>
+            <button id="cancelConfirm" class="btn-darkglass btn-dangerglass" type="button" disabled>
+              <i class="bi bi-trash3"></i> Cancel selected
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toastbox" class="toastbox" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    // ===== CINEMAS PAGE LOGIC =====
+    const grid = document.getElementById("cinemaGrid");
+    const statusArea = document.getElementById("statusArea");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    const CINEMAS_API = "/retrieve_cinemas";
+    const FALLBACK_IMG = "https://via.placeholder.com/800x450?text=Cinema+Logo";
+
+    function setStatus(type, message) {
+      if (!message) { statusArea.innerHTML = ""; return; }
+      const icon = type === "error" ? "bi-exclamation-triangle" : "bi-info-circle";
+      const color = type === "error" ? "danger" : "primary";
+      statusArea.innerHTML = `
+        <div class="status-box border-start border-4 border-${color}">
+          <div class="d-flex align-items-start gap-2">
+            <i class="bi ${icon} fs-5 text-${color}"></i>
+            <div>${message}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // ✅ Ensure URL opens EXACTLY as given (not relative).
+    // If DB stores "www.google.com/..." add https:// automatically.
+    function normalizeExternalUrl(u) {
+      const s = String(u || "").trim();
+      if (!s) return "";
+      if (/^https?:\/\//i.test(s)) return s;
+      if (/^\/\//.test(s)) return "https:" + s;
+      // likely "www..." or "maps.google..."
+      return "https://" + s;
+    }
+
+    function cinemaCard(cinema) {
+      const id = cinema.cinema_id;
+      const name = cinema.cinema_name || "Cinema";
+      const location = cinema.location || "Unknown location";
+      const logo = cinema.logo_url || cinema.logo || cinema.image_url || cinema.cinema_logo_url || FALLBACK_IMG;
+
+      const rawLocUrl = cinema.location_url || "";
+      const locUrl = normalizeExternalUrl(rawLocUrl);
+
+      const col = document.createElement("div");
+      col.className = "col-12 col-sm-6 col-md-4 col-lg-3";
+
+      col.innerHTML = `
+        <div class="cinema-card" role="button" tabindex="0" data-id="${id}">
+          <div class="cinema-img-wrap">
+            <img class="cinema-img" src="${logo}" alt="${escapeHtml(name)} logo"
+              onerror="this.onerror=null;this.src='${FALLBACK_IMG}'">
+          </div>
+
+          <div class="cinema-body">
+            <div class="cinema-name">
+              <i class="bi bi-camera-reels-fill" style="color:#1a75ff;"></i>
+              <span>${escapeHtml(name)}</span>
+            </div>
+
+            <div class="cinema-location">
+              <i class="bi bi-geo-alt-fill" style="color:#1a75ff;"></i>
+              <span>${escapeHtml(location)}</span>
+            </div>
+
+            <!-- ✅ NEW hyperlink row (clear + same style vibe) -->
+            ${
+              locUrl
+                ? `
+                  <a class="cinema-maprow"
+                     href="${locUrl}"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     title="Open cinema location">
+                    <i class="bi bi-map-fill"></i>
+                    <span>Open cinema location</span>
+                    <i class="bi bi-box-arrow-up-right" style="opacity:.7; margin-left:auto;"></i>
+                  </a>
+                `
+                : `
+                  <div class="cinema-maprow disabled" title="No location URL available">
+                    <i class="bi bi-map"></i>
+                    <span>Location link not available</span>
+                  </div>
+                `
+            }
+          </div>
+        </div>
+      `;
+
+      const card = col.querySelector(".cinema-card");
+
+      // ✅ clicking the hyperlink row MUST NOT trigger card redirect
+      const mapRow = col.querySelector(".cinema-maprow");
+      if (mapRow && mapRow.tagName === "A") {
+        mapRow.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+      }
+
+      // Card click -> showtimes
+      card.addEventListener("click", () => {
+        window.location.href = `/showtimes_redirect?cinema_id=${encodeURIComponent(id)}`;
+      });
+
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") card.click();
+      });
+
+      return col;
+    }
+
+    async function loadCinemas() {
+      setStatus("info", "Loading cinemas...");
+      grid.innerHTML = "";
+
+      try {
+        const res = await fetch(CINEMAS_API, {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "Accept": "application/json" }
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          const msg = data?.message || `Request failed (${res.status})`;
+          setStatus("error", msg);
+          return;
+        }
+
+        const cinemas = data?.data || [];
+        if (!Array.isArray(cinemas) || cinemas.length === 0) {
+          setStatus("info", "No cinemas found in the database.");
+          return;
+        }
+
+        setStatus("", "");
+        cinemas.forEach(c => grid.appendChild(cinemaCard(c)));
+      } catch (err) {
+        console.error(err);
+        setStatus("error", "Server/network error while loading cinemas.");
+      }
+    }
+
+    refreshBtn.addEventListener("click", loadCinemas);
+    loadCinemas();
+
+    // ===== REGISTRATIONS OVERLAY LOGIC =====
+    const REG_API = "/show_registrations";
+    const CANCEL_API = "/cancel"; // GET /cancel?registration_id=...
+    const LOGIN_PAGE = "/home.html";
+
+    const regsBtn = document.getElementById("regsBtn");
+    const regsOverlay = document.getElementById("regsOverlay");
+    const regsPanel = document.getElementById("regsPanel");
+    const regsClose = document.getElementById("regsClose");
+    const regsBody = document.getElementById("regsBody");
+    const regsSub = document.getElementById("regsSub");
+
+    // Cancel UI
+    const cancelModal = document.getElementById("cancelModal");
+    const cancelList = document.getElementById("cancelList");
+    const cancelSub = document.getElementById("cancelSub");
+    const cancelClose = document.getElementById("cancelClose");
+    const cancelBack = document.getElementById("cancelBack");
+    const cancelConfirm = document.getElementById("cancelConfirm");
+
+    const toastbox = document.getElementById("toastbox");
+
+    // Keep current registrations in memory (so we can update UI after cancel)
+    let currentRegItems = []; // array of showtime objects from API
+    let cancelContext = null; // { showtime_id, registrations:[{booking_id, seat_id, created_at}] }
+    let selectedCancelBookingId = null;
+
+    function showToast(title, msg){
+      const el = document.createElement("div");
+      el.className = "toastitem";
+      el.innerHTML = `
+        <div class="toasttitle">
+          <i class="bi bi-check2-circle"></i>
+          <span>${escapeHtml(title)}</span>
+        </div>
+        <div class="toastmsg">${escapeHtml(msg)}</div>
+      `;
+      toastbox.appendChild(el);
+      setTimeout(() => { el.style.opacity = "0"; el.style.transform = "translateY(8px)"; }, 2200);
+      setTimeout(() => { el.remove(); }, 2600);
+    }
+
+    function fmtTime(d){
+      const dt = new Date(d);
+      if (Number.isNaN(dt.getTime())) return "—";
+      return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(dt);
+    }
+
+    function fmtDate(d){
+      const dt = new Date(d);
+      if (Number.isNaN(dt.getTime())) return "—";
+      return new Intl.DateTimeFormat(undefined, { weekday:"short", month:"short", day:"2-digit" }).format(dt);
+    }
+
+    function setOriginFromButton() {
+      const r = regsBtn.getBoundingClientRect();
+      regsPanel.style.setProperty("--origin-x", (r.left + r.width/2) + "px");
+      regsPanel.style.setProperty("--origin-y", (r.top + r.height/2) + "px");
+    }
+
+    function openOverlay() {
+      setOriginFromButton();
+      regsOverlay.classList.add("open");
+      regsOverlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeOverlay() {
+      closeCancelModal();
+      regsOverlay.classList.remove("open");
+      regsOverlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    regsBtn.addEventListener("click", async () => {
+      openOverlay();
+      await loadRegistrations();
+    });
+
+    regsClose.addEventListener("click", closeOverlay);
+
+    regsOverlay.addEventListener("click", (e) => {
+      // click outside panel closes overlay
+      if (e.target === regsOverlay) closeOverlay();
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (cancelModal.classList.contains("open")) closeCancelModal();
+        else if (regsOverlay.classList.contains("open")) closeOverlay();
+      }
+    });
+
+    function openCancelModal(context, triggerEl){
+      cancelContext = context;
+      selectedCancelBookingId = null;
+      cancelConfirm.disabled = true;
+
+      // nice subtitle
+      const movieName = context?.Movie?.movie_name || "Showtime";
+      cancelSub.textContent = `${movieName} • Showtime #${context.showtime_id} • Choose seat to cancel`;
+
+      // render list: each choice is registration row => we call /cancel with booking_id
+      const regs = Array.isArray(context.registrations) ? context.registrations : [];
+      if (!regs.length){
+        cancelList.innerHTML = `<div class="regs-empty">No seats to cancel for this showtime.</div>`;
+        cancelConfirm.disabled = true;
+      } else {
+        // sort by seat_id for clean list
+        const sorted = regs.slice().sort((a,b) => Number(a.seat_id) - Number(b.seat_id));
+        cancelList.innerHTML = sorted.map(r => `
+          <div class="seat-choice" data-booking-id="${escapeHtml(r.booking_id)}" data-seat-id="${escapeHtml(r.seat_id)}">
+            <div class="left">
+              <span class="pill">Seat ${escapeHtml(r.seat_id)}</span>
+              <div class="meta">Registration #${escapeHtml(r.booking_id)}</div>
+            </div>
+            <i class="bi bi-chevron-right" style="opacity:.65;"></i>
+          </div>
+        `).join("");
+
+        cancelList.querySelectorAll(".seat-choice").forEach(el => {
+          el.addEventListener("click", () => {
+            cancelList.querySelectorAll(".seat-choice").forEach(x => x.classList.remove("active"));
+            el.classList.add("active");
+            selectedCancelBookingId = Number(el.dataset.bookingId);
+            cancelConfirm.disabled = !selectedCancelBookingId;
+          });
+        });
+      }
+
+      // set transform origin from clicked cancel button (optional polish)
+      if (triggerEl && triggerEl.getBoundingClientRect){
+        const r = triggerEl.getBoundingClientRect();
+        regsPanel.style.setProperty("--origin-x", (r.left + r.width/2) + "px");
+        regsPanel.style.setProperty("--origin-y", (r.top + r.height/2) + "px");
+      }
+
+      cancelModal.classList.add("open");
+      cancelModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeCancelModal(){
+      cancelModal.classList.remove("open");
+      cancelModal.setAttribute("aria-hidden", "true");
+      cancelList.innerHTML = "";
+      cancelContext = null;
+      selectedCancelBookingId = null;
+      cancelConfirm.disabled = true;
+    }
+
+    cancelClose.addEventListener("click", closeCancelModal);
+    cancelBack.addEventListener("click", closeCancelModal);
+
+    cancelConfirm.addEventListener("click", async () => {
+      if (!selectedCancelBookingId) return;
+
+      // lock UI
+      cancelConfirm.disabled = true;
+      cancelConfirm.innerHTML = `<i class="bi bi-hourglass-split"></i> Cancelling…`;
+
+      try {
+        const url = `${CANCEL_API}?registration_id=${encodeURIComponent(selectedCancelBookingId)}`;
+        const res = await fetch(url, {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "Accept": "application/json" }
+        });
+
+        if (res.status === 401){
+          window.location.href = LOGIN_PAGE;
+          return;
+        }
+
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok || !payload?.ok){
+          const msg = payload?.message || `Cancel failed (${res.status})`;
+          showToast("Cancel failed", msg);
+          return;
+        }
+
+        // ✅ Update local data and UI without reloading
+        // 1) remove registration from the showtime in currentRegItems
+        const sid = Number(cancelContext?.showtime_id);
+        const bid = Number(selectedCancelBookingId);
+
+        currentRegItems = currentRegItems.map(st => {
+          if (Number(st.showtime_id) !== sid) return st;
+          const regs = Array.isArray(st.registrations) ? st.registrations : [];
+          const kept = regs.filter(r => Number(r.booking_id) !== bid);
+          return { ...st, registrations: kept };
+        });
+
+        // 2) re-render overlay list
+        renderRegistrations(currentRegItems);
+
+        // 3) close modal
+        closeCancelModal();
+
+        // 4) toast
+        showToast("Booking cancelled", `Registration #${bid} was cancelled successfully.`);
+      } catch (err){
+        console.error(err);
+        showToast("Cancel failed", "Network/server error while cancelling.");
+      } finally {
+        cancelConfirm.innerHTML = `<i class="bi bi-trash3"></i> Cancel selected`;
+        cancelConfirm.disabled = true;
+      }
+    });
+
+    async function loadRegistrations() {
+      regsSub.textContent = "Loading…";
+      regsBody.innerHTML = `<div class="regs-empty">Loading your registrations…</div>`;
+
+      try {
+        const res = await fetch(REG_API, {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "Accept": "application/json" }
+        });
+
+        const text = await res.text();
+        let payload = null;
+        try { payload = JSON.parse(text); } catch {}
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            window.location.href = LOGIN_PAGE;
+            return;
+          }
+          regsSub.textContent = "Could not load registrations";
+          regsBody.innerHTML = `<div class="regs-empty">Failed (${res.status}). Please try again.</div>`;
+          return;
+        }
+
+        if (!payload || !payload.ok) {
+          regsSub.textContent = "Could not load registrations";
+          regsBody.innerHTML = `<div class="regs-empty">${escapeHtml(payload?.error || "Unknown error")}</div>`;
+          return;
+        }
+
+        const items = payload.data || [];
+        currentRegItems = Array.isArray(items) ? items : [];
+
+        regsSub.textContent = currentRegItems.length ? `${currentRegItems.length} active showtime(s)` : "No active showtimes";
+
+        if (!currentRegItems.length) {
+          regsBody.innerHTML = `<div class="regs-empty">${escapeHtml(payload.message || "No registrations.")}</div>`;
+          return;
+        }
+
+        renderRegistrations(currentRegItems);
+      } catch (err) {
+        console.error(err);
+        regsSub.textContent = "Network error";
+        regsBody.innerHTML = `<div class="regs-empty">Network/server error. Try again.</div>`;
+      }
+    }
+
+    function renderRegistrations(items){
+      // If a showtime has 0 registrations, hide it (since nothing to cancel / show)
+      const cleaned = items.filter(st => Array.isArray(st.registrations) && st.registrations.length > 0);
+      if (!cleaned.length){
+        regsBody.innerHTML = `<div class="regs-empty">No active registrations.</div>`;
+        regsSub.textContent = "No active showtimes";
+        return;
+      }
+
+      regsBody.innerHTML = cleaned.map(renderRegCard).join("");
+
+      // wire cancel buttons
+      regsBody.querySelectorAll("[data-action='open-cancel']").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const showtimeId = Number(btn.dataset.showtimeId);
+          const st = cleaned.find(x => Number(x.showtime_id) === showtimeId);
+          if (!st) return;
+
+          openCancelModal(st, btn);
+        });
+      });
+    }
+
+    function renderRegCard(st) {
+      const movie = st.Movie || {};
+      const cinema = st.Cinema || {};
+
+      const title = movie.movie_name || "Movie";
+      const start = st.start_time;
+      const end = st.end_time;
+
+      const cinemaLabel = cinema.cinema_name ? escapeHtml(cinema.cinema_name) : `Cinema ${escapeHtml(st.cinema_id)}`;
+      const location = cinema.location ? ` • ${escapeHtml(cinema.location)}` : "";
+      const hallLabel = st.hall_id ? `Hall ${escapeHtml(st.hall_id)}` : "Hall";
+
+      // registrations = [{ booking_id, seat_id, created_at }]
+      const regs = Array.isArray(st.registrations) ? st.registrations : [];
+
+      // Dedup seats + booking ids
+      const regIds = [...new Set(regs.map(r => r.booking_id).filter(Boolean))];
+      const seatIds = [...new Set(regs.map(r => r.seat_id).filter(Boolean))];
+
+      const regChips = regIds.length
+        ? regIds.map(id => `<span class="seat-tag"><i class="bi bi-receipt"></i><b>#${escapeHtml(id)}</b></span>`).join("")
+        : `<div class="text-white-50">—</div>`;
+
+      const seatChips = seatIds.length
+        ? seatIds.map(id => `<span class="seat-tag"><i class="bi bi-person-check"></i>Seat <b>${escapeHtml(id)}</b></span>`).join("")
+        : `<div class="text-white-50">—</div>`;
+
+      // ✅ Cancel button on the right of header
+      return `
+        <div class="regs-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+            <div style="min-width:0;">
+              <h3 class="regs-card-title">${escapeHtml(title)}</h3>
+              <div class="regs-meta" style="margin-top:6px;">
+                <span><i class="bi bi-geo-alt"></i> ${cinemaLabel}${location}</span>
+                <span><i class="bi bi-door-closed"></i> ${hallLabel}</span>
+                <span><i class="bi bi-stopwatch"></i> ${fmtTime(start)} → ${fmtTime(end)}</span>
+              </div>
+            </div>
+
+            <div class="d-flex flex-column align-items-end gap-2">
+              <span class="regs-chip"><i class="bi bi-clock"></i> ${fmtTime(start)} • ${fmtDate(start)}</span>
+              <button
+                class="cancel-btn"
+                data-action="open-cancel"
+                data-showtime-id="${escapeHtml(st.showtime_id)}"
+                type="button"
+                title="Cancel a seat from this showtime"
+              >
+                <i class="bi bi-x-circle"></i>
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; display:grid; gap:10px;">
+            <div>
+              <div style="font-weight:900; color:rgba(255,255,255,0.85); font-size:.85rem; letter-spacing:.3px; margin-bottom:6px;">
+                Registration IDs
+              </div>
+              <div class="regs-seats">${regChips}</div>
+            </div>
+
+            <div>
+              <div style="font-weight:900; color:rgba(255,255,255,0.85); font-size:.85rem; letter-spacing:.3px; margin-bottom:6px;">
+                Seat IDs
+              </div>
+              <div class="regs-seats">${seatChips}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

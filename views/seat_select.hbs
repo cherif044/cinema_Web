@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seat Selection</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#1c1f22;
+      --panel:#24282d;
+
+      /* seat base colors */
+      --seat-normal:#49b77d;     /* green */
+      --seat-vip:#d7b74a;        /* gold */
+
+      /* unavailable */
+      --seat-gray:#4b4f55;
+
+      /* selected colors (different per type) */
+      --sel-normal:#2b7fff; /* blue */
+      --sel-vip:#7c3aed;    /* purple */
+
+      --seat-size:26px;
+      --gap:12px;
+      --radius:7px;
+
+      --glass: rgba(255,255,255,0.10);
+      --glassBorder: rgba(255,255,255,0.16);
+      --shadow: 0 18px 55px rgba(0,0,0,0.35);
+    }
+
+    html, body { height: 100%; }
+
+    body{
+      background: radial-gradient(1200px 600px at 50% -100px, #2b2f35, var(--bg));
+      color:#e9eef5;
+      min-height:100vh;
+      overscroll-behavior-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .screen{
+      width:min(720px, 92vw);
+      height:90px;
+      margin: 20px auto 30px;
+      background: linear-gradient(180deg, #0f1113, #0b0c0e);
+      border-radius: 0 0 140px 140px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:900; font-size:26px; letter-spacing:2px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.55);
+      user-select:none;
+    }
+
+    .panel{
+      background: rgba(36,40,45,0.90);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 18px 18px 22px;
+      box-shadow: var(--shadow);
+      overflow: visible;
+      position: relative;
+      transform: translateY(var(--pull, 0px));
+      transition: transform 180ms ease;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 40px 1fr;
+      gap: 12px;
+      align-items:start;
+    }
+
+    .rowLabels{
+      display:flex;
+      flex-direction:column;
+      gap: var(--gap);
+      padding-top: 2px;
+    }
+
+    .rowLabel{
+      height: var(--seat-size);
+      display:flex; align-items:center; justify-content:center;
+      color: rgba(233,238,245,0.65);
+      font-weight:700;
+      font-size: 13px;
+    }
+
+    .grid{
+      display:grid;
+      gap: var(--gap);
+      justify-items:center;
+      align-items:center;
+      overflow-x:auto;
+      padding-bottom: 10px;
+      overflow-y: visible;
+    }
+
+    .seat{
+      width: var(--seat-size);
+      height: var(--seat-size);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.12);
+      cursor:pointer;
+      position:relative;
+      user-select:none;
+      transition: transform 120ms ease, box-shadow 140ms ease, outline 140ms ease, background 140ms ease;
+      z-index: 1;
+    }
+
+    .seat.normal{ background: var(--seat-normal); }
+    .seat.vip{ background: var(--seat-vip); }
+
+    .seat:not(.taken):not(.inactive):hover{
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.22);
+      z-index: 3;
+    }
+
+    .seat.taken,
+    .seat.inactive{
+      background: var(--seat-gray) !important;
+      cursor:not-allowed;
+      opacity:.92;
+      filter: grayscale(0.9) brightness(0.95);
+      transform:none !important;
+      box-shadow:none !important;
+      z-index: 1;
+    }
+
+    .seat.taken::after,
+    .seat.inactive::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.65) 46%, rgba(255,255,255,0.65) 54%, transparent 55%),
+        linear-gradient(-45deg, transparent 45%, rgba(255,255,255,0.65) 46%, rgba(255,255,255,0.65) 54%, transparent 55%);
+      opacity:.45;
+    }
+
+    .seat.selected.normal{
+      background: var(--sel-normal) !important;
+      outline: 3px solid rgba(255,255,255,0.20);
+      outline-offset: 2px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.24);
+      z-index: 4;
+      transform: translateY(-2px);
+    }
+
+    .seat.selected.vip{
+      background: var(--sel-vip) !important;
+      outline: 3px solid rgba(255,255,255,0.20);
+      outline-offset: 2px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.24);
+      z-index: 4;
+      transform: translateY(-2px);
+    }
+
+    .seat.empty{
+      background: transparent;
+      border:none;
+      cursor:default;
+      box-shadow:none;
+    }
+
+    .glass-btn{
+      border-radius: 999px !important;
+      border: 1px solid var(--glassBorder) !important;
+      background: var(--glass) !important;
+      backdrop-filter: blur(12px) saturate(160%);
+      -webkit-backdrop-filter: blur(12px) saturate(160%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 10px 20px rgba(0,0,0,0.16);
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease;
+      color: inherit !important;
+    }
+    .glass-btn:hover{
+      transform: translateY(-3px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        0 16px 28px rgba(0,0,0,0.18);
+    }
+    .glass-btn:active{
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 10px 18px rgba(0,0,0,0.14);
+    }
+
+    .confirm-bar{
+      position: sticky;
+      bottom: 16px;
+      z-index: 2000;
+      width: min(760px, calc(100vw - 24px));
+      margin: 0 auto;
+      pointer-events: none;
+    }
+
+    .confirm-shell{
+      pointer-events: auto;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(19, 28, 45, 0.74);
+      backdrop-filter: blur(14px) saturate(170%);
+      -webkit-backdrop-filter: blur(14px) saturate(170%);
+      box-shadow: 0 18px 55px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: stretch;
+      transform: translateY(18px);
+      opacity: 0;
+      transition: transform 220ms cubic-bezier(.2,.8,.2,1), opacity 220ms ease;
+    }
+
+    .confirm-shell.open{
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .receipt-panel{
+      padding: 12px 14px;
+      background: linear-gradient(90deg, rgba(43,127,255,0.22), rgba(43,127,255,0.08));
+      border-right: 1px solid rgba(255,255,255,0.10);
+      display: grid;
+      gap: 8px;
+    }
+
+    .receipt-title{
+      font-weight: 900;
+      letter-spacing: .2px;
+      color: rgba(255,255,255,0.92);
+      font-size: .95rem;
+    }
+
+    .receipt-lines{
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      font-size: .86rem;
+      color: rgba(233,238,245,0.88);
+      display: grid;
+      gap: 4px;
+    }
+
+    .receipt-row{
+      display:flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: rgba(233,238,245,0.88);
+    }
+
+    .receipt-row strong{
+      color: rgba(255,255,255,0.92);
+      font-weight: 900;
+    }
+
+    .receipt-total{
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255,255,255,0.18);
+      display:flex;
+      justify-content: space-between;
+      font-weight: 900;
+      color: rgba(255,255,255,0.95);
+    }
+
+    .confirm-action{
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .confirm-btn{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(43,127,255,0.30);
+      backdrop-filter: blur(10px) saturate(160%);
+      -webkit-backdrop-filter: blur(10px) saturate(160%);
+      color: #fff;
+      font-weight: 900;
+      padding: 12px 18px;
+      min-width: 160px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 14px 30px rgba(0,0,0,0.28);
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease, filter 180ms ease;
+    }
+
+    .confirm-btn:hover{ transform: translateY(-2px); filter: brightness(1.04); }
+    .confirm-btn:active{ transform: translateY(-1px); }
+
+    .confirm-btn:disabled{
+      opacity: .65;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .confirm-dot{
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.85);
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.12);
+    }
+
+    .toast-wrap{
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5000;
+      width: min(680px, calc(100vw - 24px));
+      pointer-events: none;
+    }
+
+    .toast{
+      pointer-events: auto;
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(20, 150, 90, 0.20);
+      border: 1px solid rgba(110, 255, 190, 0.22);
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+      box-shadow: 0 18px 55px rgba(0,0,0,0.35);
+      color: rgba(255,255,255,0.92);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+
+      opacity: 0;
+      transform: translateY(-10px) scale(0.98);
+      transition: opacity 220ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    .toast.show{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .toast-title{
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+
+    .toast-sub{
+      color: rgba(233,238,245,0.80);
+      font-size: .90rem;
+    }
+
+    .toast-badge{
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: rgba(110,255,190,0.90);
+      box-shadow: 0 0 0 7px rgba(110,255,190,0.14);
+      flex: 0 0 auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <div class="fw-bold fs-3">Seat Selection</div>
+        <div class="text-white-50">
+          Showtime #{{showtime.showtime_id}} • Cinema {{showtime.cinema_id}} • Hall {{showtime.hall_id}}
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="text-white-50 small">Selected</div>
+        <div class="fw-bold" id="selectedCount">0</div>
+      </div>
+    </div>
+
+    <div class="screen">SCREEN</div>
+
+    <div class="panel" id="panel">
+      <div class="d-flex gap-2 justify-content-end mb-3">
+        <button class="btn glass-btn btn-sm" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="layout">
+        <div class="rowLabels" id="rowLabels"></div>
+        <div class="grid" id="seatGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap">
+    <div class="toast" id="toast">
+      <div class="d-flex align-items-start gap-3">
+        <span class="toast-badge"></span>
+        <div>
+          <div class="toast-title">Booking confirmed</div>
+          <div class="toast-sub" id="toastSub">Your seats have been reserved successfully.</div>
+        </div>
+      </div>
+      <div class="text-white-50 small" id="toastMeta"></div>
+    </div>
+  </div>
+
+  <div class="confirm-bar">
+    <div class="confirm-shell" id="confirmShell" aria-hidden="true">
+      <div class="receipt-panel">
+        <div class="receipt-title">Selection summary</div>
+        <div class="receipt-lines" id="receiptLines"></div>
+        <div class="receipt-total" id="receiptTotal"></div>
+      </div>
+      <div class="confirm-action">
+        <button class="confirm-btn" id="confirmBtn">
+          <span class="confirm-dot"></span>
+          Confirm booking
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ IMPORTANT: remove quotes so we don't get NaN when handlebars injects
+    const SHOWTIME_ID = Number({{showtime.showtime_id}});
+    const CINEMA_ID   = Number({{showtime.cinema_id}});
+    const HALL_ID     = Number({{showtime.hall_id}});
+
+    // each seat should include: { seat_id,row,col,registered,seat_type,status,price }
+    const SEATS = {{{seatMapJson}}};
+
+    const selectedSeatIds = new Set();
+    const seatById = new Map(SEATS.map(s => [Number(s.seat_id), s]));
+
+    const seatGridEl = document.getElementById("seatGrid");
+    const rowLabelsEl = document.getElementById("rowLabels");
+    const selectedCountEl = document.getElementById("selectedCount");
+
+    const confirmShell = document.getElementById("confirmShell");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const receiptLinesEl = document.getElementById("receiptLines");
+    const receiptTotalEl = document.getElementById("receiptTotal");
+
+    const toast = document.getElementById("toast");
+    const toastSub = document.getElementById("toastSub");
+    const toastMeta = document.getElementById("toastMeta");
+
+    const panel = document.getElementById("panel");
+
+    function rowName(n){
+      let s=""; while(n>0){ n--; s=String.fromCharCode(65+(n%26))+s; n=Math.floor(n/26); }
+      return s;
+    }
+
+    function money(v){
+      const num = Number(v);
+      if (!Number.isFinite(num)) return "0.00";
+      return num.toFixed(2);
+    }
+
+    function showToast({ title="Booking confirmed", sub="Your seats have been reserved successfully.", meta="" } = {}){
+      toast.querySelector(".toast-title").textContent = title;
+      toastSub.textContent = sub;
+      toastMeta.textContent = meta;
+
+      toast.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function updateSelectedCount(){
+      selectedCountEl.textContent = String(selectedSeatIds.size);
+    }
+
+    function buildReceipt(){
+      const buckets = new Map();
+      let total = 0;
+
+      for (const id of selectedSeatIds){
+        const seat = seatById.get(Number(id));
+        if (!seat) continue;
+
+        const type = (seat.seat_type || "normal").toLowerCase();
+        const price = Number(seat.price);
+        const unit = Number.isFinite(price) ? price : 0;
+
+        const key = `${type}|${unit}`;
+        if (!buckets.has(key)) buckets.set(key, { type, unit, count: 0, sum: 0 });
+        const b = buckets.get(key);
+
+        b.count += 1;
+        b.sum += unit;
+        total += unit;
+      }
+
+      const arr = Array.from(buckets.values()).sort((a,b) => {
+        const rank = (t) => t === "vip" ? 0 : 1;
+        const r = rank(a.type) - rank(b.type);
+        if (r !== 0) return r;
+        return b.unit - a.unit;
+      });
+
+      return { lines: arr, total };
+    }
+
+    function renderConfirmBar(){
+      const count = selectedSeatIds.size;
+
+      if (count === 0){
+        confirmShell.classList.remove("open");
+        confirmShell.setAttribute("aria-hidden", "true");
+        receiptLinesEl.innerHTML = "";
+        receiptTotalEl.innerHTML = "";
+        return;
+      }
+
+      const { lines, total } = buildReceipt();
+
+      receiptLinesEl.innerHTML = lines.map(l => {
+        const label = l.type === "vip" ? "VIP" : "Standard";
+        return `
+          <div class="receipt-row">
+            <span>${label} · ${l.count} × ${money(l.unit)}</span>
+            <strong>${money(l.sum)}</strong>
+          </div>
+        `;
+      }).join("");
+
+      receiptTotalEl.innerHTML = `
+        <span>Total</span>
+        <span>${money(total)}</span>
+      `;
+
+      confirmShell.classList.add("open");
+      confirmShell.setAttribute("aria-hidden", "false");
+    }
+
+    function clearSelection(){
+      selectedSeatIds.clear();
+      document.querySelectorAll(".seat.selected").forEach(el => el.classList.remove("selected"));
+      updateSelectedCount();
+      renderConfirmBar();
+    }
+
+    document.getElementById("clearBtn").addEventListener("click", clearSelection);
+
+    // ✅ booking (modified to NEVER fail silently)
+    confirmBtn.addEventListener("click", async () => {
+      if (selectedSeatIds.size === 0) return;
+
+      // quick sanity check (avoids silent NaN bugs)
+      if (!Number.isFinite(SHOWTIME_ID) || !Number.isFinite(CINEMA_ID) || !Number.isFinite(HALL_ID)) {
+        showToast({
+          title: "Booking failed",
+          sub: "Page data is invalid (showtime/cinema/hall). Refresh and try again.",
+          meta: ""
+        });
+        console.error("Bad template numbers:", { SHOWTIME_ID, CINEMA_ID, HALL_ID });
+        return;
+      }
+
+      const seatIds = Array.from(selectedSeatIds);
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Processing...";
+
+      try {
+        const results = await Promise.all(
+          seatIds.map(async (seat_id) => {
+            const res = await fetch("/register_seat", {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                showtime_id: SHOWTIME_ID,
+                cinema_id: CINEMA_ID,
+                hall_id: HALL_ID,
+                seat_id
+              }),
+            });
+
+            // ✅ read JSON if possible; otherwise read text (redirect/html)
+            const ct = res.headers.get("content-type") || "";
+            let data = null;
+
+            if (ct.includes("application/json")) {
+              try { data = await res.json(); } catch {}
+            } else {
+              const text = await res.text().catch(() => "");
+              data = {
+                ok: false,
+                error: res.redirected ? "Not authenticated (redirected)" : "Non-JSON response",
+                preview: text.slice(0, 120)
+              };
+            }
+
+            return { seat_id, ok: !!(res.ok && data?.ok), status: res.status, data };
+          })
+        );
+
+        console.log("register_seat results:", results);
+
+        const success = results.filter(r => r.ok);
+        const failed  = results.filter(r => !r.ok);
+
+        // mark success seats as taken
+        success.forEach(r => {
+          selectedSeatIds.delete(r.seat_id);
+          const el = document.querySelector(`.seat[data-seat-id="${r.seat_id}"]`);
+          if (el){
+            el.classList.remove("selected");
+            el.classList.add("taken");
+          }
+        });
+
+        updateSelectedCount();
+        renderConfirmBar();
+
+        // ✅ success toast
+        if (success.length){
+          const meta = `Booked: ${success.length} seat(s)`;
+          if (failed.length === 0){
+            showToast({ title: "Booking confirmed", sub: "Your seats have been reserved successfully.", meta });
+          } else {
+            showToast({ title: "Partial booking", sub: "Some seats could not be reserved.", meta });
+          }
+        }
+
+        // ✅ IMPORTANT: if ALL failed, show the first error (no more silent failures)
+        if (success.length === 0 && failed.length) {
+          const first = failed[0];
+          showToast({
+            title: "Booking failed",
+            sub: first.data?.error || `Failed (status ${first.status})`,
+            meta: `Failed: ${failed.length} seat(s)`
+          });
+        }
+
+      } catch (err) {
+        console.error(err);
+        showToast({ title: "Booking failed", sub: "Network/server error. Please try again.", meta: "" });
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = `<span class="confirm-dot"></span> Confirm booking`;
+      }
+    });
+
+    function renderGrid(seats){
+      const maxRow = seats.reduce((m,s)=>Math.max(m,s.row), 0);
+      const maxCol = seats.reduce((m,s)=>Math.max(m,s.col), 0);
+
+      seatGridEl.style.gridTemplateColumns = `repeat(${maxCol}, var(--seat-size))`;
+
+      rowLabelsEl.innerHTML = "";
+      for (let r=1; r<=maxRow; r++){
+        const el = document.createElement("div");
+        el.className = "rowLabel";
+        el.textContent = rowName(r);
+        rowLabelsEl.appendChild(el);
+      }
+
+      const byPos = new Map();
+      for (const s of seats) byPos.set(`${s.row}-${s.col}`, s);
+
+      seatGridEl.innerHTML = "";
+
+      for (let r=1; r<=maxRow; r++){
+        for (let c=1; c<=maxCol; c++){
+          const s = byPos.get(`${r}-${c}`);
+          if (!s){
+            const empty = document.createElement("div");
+            empty.className = "seat empty";
+            seatGridEl.appendChild(empty);
+            continue;
+          }
+
+          const seatEl = document.createElement("div");
+          const seatType = (s.seat_type || "normal").toLowerCase();
+
+          seatEl.className = `seat ${seatType === "vip" ? "vip" : "normal"}`;
+          seatEl.dataset.seatId = String(s.seat_id);
+
+          const inactive = String(s.status || "").toLowerCase() === "inactive";
+          const taken = !!s.registered;
+
+          if (taken) seatEl.classList.add("taken");
+          if (inactive) seatEl.classList.add("inactive");
+
+          const price = (s.price == null) ? "0.00" : money(s.price);
+          seatEl.title = `Row ${rowName(s.row)} • Seat ${s.col} • ${seatType.toUpperCase()} • ${price}`;
+
+          if (!taken && !inactive){
+            seatEl.addEventListener("click", () => {
+              const id = Number(seatEl.dataset.seatId);
+
+              if (selectedSeatIds.has(id)){
+                selectedSeatIds.delete(id);
+                seatEl.classList.remove("selected");
+              } else {
+                selectedSeatIds.add(id);
+                seatEl.classList.add("selected");
+              }
+
+              updateSelectedCount();
+              renderConfirmBar();
+            });
+          }
+
+          seatGridEl.appendChild(seatEl);
+        }
+      }
+
+      updateSelectedCount();
+      renderConfirmBar();
+    }
+
+    (function initPull(){
+      let pulling = false;
+      let startY = 0;
+      let pull = 0;
+
+      window.addEventListener("wheel", (e) => {
+        const atBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 2);
+        if (!atBottom) return;
+        if (e.deltaY <= 0) return;
+
+        pull = Math.min(26, pull + e.deltaY * 0.05);
+        panel.style.setProperty("--pull", `${pull}px`);
+
+        clearTimeout(initPull._t);
+        initPull._t = setTimeout(() => {
+          pull = 0;
+          panel.style.setProperty("--pull", `0px`);
+        }, 120);
+      }, { passive: true });
+
+      window.addEventListener("touchstart", (e) => {
+        const atBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 2);
+        if (!atBottom) return;
+        pulling = true;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+
+      window.addEventListener("touchmove", (e) => {
+        if (!pulling) return;
+        const dy = startY - e.touches[0].clientY;
+        if (dy < 0) return;
+        pull = Math.min(26, dy * 0.12);
+        panel.style.setProperty("--pull", `${pull}px`);
+      }, { passive: true });
+
+      window.addEventListener("touchend", () => {
+        pulling = false;
+        panel.style.setProperty("--pull", `0px`);
+      }, { passive: true });
+    })();
+
+    renderGrid(SEATS);
+  </script>
+</body>
+</html>
