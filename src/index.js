@@ -47,7 +47,6 @@ const edit_pricing = require("./routes/admin/edit_pricing");
 //start server
 const app = express();
 app.set("trust proxy", 1);
-const port = 3000;
 
 // EJS
 app.set('view engine', 'hbs');
@@ -110,17 +109,17 @@ app.get("/admin_panel",
 
 
 
-// Start only after DB is OK
+// ✅ For Vercel (serverless): DO NOT app.listen() here.
+// ✅ Also don't hard-crash the process on DB issues.
+
+// Optional: you can test DB connection on cold start without killing app
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log('Connected to MySQL');
-    await sequelize.sync(); // ok for dev
-    console.log('Models synced');
-
-    app.listen(port, () => console.log(`Listening on port ${port}`));
+    console.log("Connected to MySQL (cold start)");
   } catch (err) {
-    console.error('DB startup failed:', err);
-    process.exit(1);
+    console.error("DB connection failed (cold start):", err.message);
   }
-})(); //
+})();
+
+module.exports = app;
