@@ -148,9 +148,18 @@ router.get("/retrieve_showtimes", requireAuth, async (req, res) => {
   try {
     const cinema = await models.Cinema.findByPk(cinema_id);
     if (!cinema) {
-      return res.status(404).json({
-        ok: false,
-        message: "Cinema not found (cinema_id is not correct).",
+      const demoShowtimes = createDemoShowtimes({
+        cinema_id,
+        cinema_name: `Demo Cinema ${cinema_id}`,
+        location: "Demo location",
+        logo_url: null,
+      });
+
+      return res.status(200).json({
+        ok: true,
+        demo: true,
+        message: "Cinema not found in the database. Showing a 3-day demo schedule.",
+        data: demoShowtimes,
       });
     }
 
@@ -304,9 +313,18 @@ router.get("/retrieve_showtimes", requireAuth, async (req, res) => {
     console.error("sqlMessage:", err?.parent?.sqlMessage);
     console.error("sql:", err?.parent?.sql);
 
+    const demoCinema = {
+      cinema_id,
+      cinema_name: "Demo Cinema",
+      location: "Demo location",
+      logo_url: null,
+    };
+
     return res.status(500).json({
-      ok: false,
-      message: "Database error while retrieving showtimes",
+      ok: true,
+      demo: true,
+      message: "Database error while retrieving showtimes. Showing a 3-day demo schedule.",
+      data: createDemoShowtimes(demoCinema),
     });
   }
 });
