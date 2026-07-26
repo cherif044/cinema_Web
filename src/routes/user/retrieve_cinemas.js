@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const path = require("path");
-const requireAuth = require("../../middleware/logged_in");
 const models = require("../../models/connector");
 
 const DEMO_CINEMAS = [
@@ -27,7 +26,7 @@ const DEMO_CINEMAS = [
   },
 ];
 
-router.get("/retrieve_cinemas",requireAuth,async (req, res) => {
+router.get("/retrieve_cinemas",async (req, res) => {
   try {
     // get all cinemas
     const cinemas = await models.Cinema.findAll();

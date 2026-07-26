@@ -1,9 +1,8 @@
 const router = require("express").Router();
-const requireAuth = require("../../middleware/logged_in");
 const models = require("../../models/connector");
 const { Op } = require("sequelize");
 
-router.get("/showtimes_redirect", requireAuth, (req, res) => {
+router.get("/showtimes_redirect", (req, res) => {
   const cinema_id = req.query.cinema_id; // <-- comes from ?cinema_id=...
 
   if (!cinema_id) {

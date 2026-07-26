@@ -1,5 +1,4 @@
 const router = require("express").Router();
-const requireAuth = require("../../middleware/logged_in");
 const models = require("../../models/connector");
 const { Op, fn, col } = require("sequelize");
 
@@ -135,7 +134,7 @@ if (models.Seat && models.Registration && !models.Seat.associations?.Registratio
   });
 }
 
-router.get("/retrieve_showtimes", requireAuth, async (req, res) => {
+router.get("/retrieve_showtimes", async (req, res) => {
   const cinema_id = Number(req.query.cinema_id);
 
   if (!cinema_id || Number.isNaN(cinema_id)) {
