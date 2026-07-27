@@ -610,6 +610,129 @@
       color: rgba(255,255,255,0.75);
       font-size: .90rem;
     }
+    /* Professional recording theme */
+    :root{
+      --page-bg:#f4f6f8;
+      --surface:#ffffff;
+      --surface-muted:#f8fafc;
+      --line:#e4e7ec;
+      --ink:#101828;
+      --muted:#667085;
+      --accent:#155eef;
+      --accent-soft:#eff4ff;
+      --shadow-sm:0 1px 2px rgba(16,24,40,0.06);
+      --shadow-md:0 10px 28px rgba(16,24,40,0.08);
+    }
+
+    body{
+      background:var(--page-bg);
+      color:var(--ink);
+    }
+
+    .topbar{
+      background:var(--surface);
+      border-bottom:1px solid var(--line);
+      box-shadow:none;
+    }
+
+    .brand{
+      color:var(--ink);
+      letter-spacing:0;
+      font-weight:700;
+    }
+
+    .page-shell{
+      background:var(--surface);
+      border:1px solid var(--line);
+      border-radius:12px;
+      box-shadow:var(--shadow-sm);
+      padding:24px;
+    }
+
+    .page-shell h2{
+      font-size:1.9rem;
+      color:var(--ink) !important;
+      letter-spacing:0;
+    }
+
+    .text-secondary{
+      color:var(--muted) !important;
+    }
+
+    .cinema-card{
+      border:1px solid var(--line);
+      border-radius:12px;
+      box-shadow:var(--shadow-sm);
+      transition:border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .cinema-card:hover{
+      transform:translateY(-2px);
+      border-color:#c7d7fe;
+      box-shadow:var(--shadow-md);
+    }
+
+    .cinema-img-wrap{
+      height:150px;
+      border-radius:12px 12px 0 0;
+      background:#e4e7ec;
+    }
+
+    .cinema-name{
+      color:var(--ink);
+      font-size:1rem;
+      font-weight:700;
+    }
+
+    .cinema-location{
+      color:#475467;
+      font-size:.92rem;
+      font-weight:500;
+    }
+
+    .cinema-maprow{
+      color:var(--accent);
+      font-size:.9rem;
+      font-weight:600;
+    }
+
+    .cinema-maprow:hover{
+      color:#0f3fae;
+      transform:none;
+    }
+
+    .pill,
+    .glass-btn{
+      background:var(--accent-soft) !important;
+      border:1px solid #d1e0ff !important;
+      box-shadow:none !important;
+      color:var(--accent) !important;
+      font-weight:600;
+    }
+
+    .glass-btn:hover{
+      transform:none;
+      background:#e0eaff !important;
+    }
+
+    .btn-outline-primary{
+      border-color:#b2ccff;
+      color:var(--accent);
+      font-weight:600;
+    }
+
+    .btn-outline-primary:hover{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#fff;
+    }
+
+    .status-box{
+      border:1px solid var(--line);
+      border-radius:10px;
+      box-shadow:none;
+      background:var(--surface-muted);
+    }
   </style>
 </head>
 
@@ -755,7 +878,7 @@
       const locUrl = normalizeExternalUrl(rawLocUrl);
 
       const col = document.createElement("div");
-      col.className = "col-12 col-sm-6 col-md-4 col-lg-3";
+      col.className = "col-12 col-md-6 col-xl-4";
 
       col.innerHTML = `
         <div class="cinema-card" role="button" tabindex="0" data-id="${id}">
