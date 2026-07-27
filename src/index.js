@@ -9,8 +9,7 @@ const requireAuth=require('./middleware/logged_in');
 const requireAdmin=require('./middleware/admin_check');
 const registerLimiter=require('./limiters/signupLimiter');
 const loginLimiter=require('./limiters/loginLimiter');
-const sequelize = require('./db/connection');
-const models = require('./models/connector'); 
+const models = require('./models/connector');
 const setupSession = require('./config/sessions');
 const home=require('./routes/user/home');
 const login=require('./routes/user/login');
@@ -40,6 +39,7 @@ const delete_regis = require("./routes/admin/delete_regis");
 const delete_seat = require("./routes/admin/delete_seat");
 const delete_showtime = require("./routes/admin/delete_showtime");
 const edit_pricing = require("./routes/admin/edit_pricing");
+const seed_now_playing = require("./routes/admin/seed_now_playing");
 
 
 
@@ -101,6 +101,7 @@ app.use("/", delete_regis);
 app.use("/", delete_seat);
 app.use("/", delete_showtime);
 app.use("/", edit_pricing);
+app.use("/", seed_now_playing);
 // Admin panel page (protect it)
 app.get("/admin_panel",
   requireAuth,requireAdmin,(req, res) => {
@@ -115,7 +116,7 @@ app.get("/admin_panel",
 // Optional: you can test DB connection on cold start without killing app
 (async () => {
   try {
-    await sequelize.authenticate();
+    await models.sequelize.authenticate();
     console.log("Connected to MySQL (cold start)");
   } catch (err) {
     console.error("DB connection failed (cold start):", err.message);

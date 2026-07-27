@@ -135,6 +135,22 @@
 
       <!-- ===== GRID OF FORMS ===== -->
       <div class="row g-3">
+        <div class="col-12">
+          <div class="cardish">
+            <div class="head">
+              <span><i class="bi bi-calendar2-week"></i> Refresh Now Playing</span>
+              <span class="mini">POST /admin/seed_now_playing</span>
+            </div>
+            <div class="body">
+              <div class="muted">
+                Replaces future bookings/showtimes, keeps one cinema scheduled, and loads current theatrical films with real poster URLs.
+              </div>
+              <button class="btn btn-primary btn-compact mt-3" data-action="seedNowPlaying">
+                <i class="bi bi-stars"></i> Refresh cinema database
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- ADD CINEMA -->
         <div class="col-12 col-lg-6">
@@ -560,6 +576,10 @@
         let r;
 
         // ===== ADD =====
+        if (action === "seedNowPlaying") {
+          r = await requestJson("/admin/seed_now_playing", "POST", {});
+        }
+
         if (action === "addCinema") {
           r = await requestJson("/admin/add_cinema", "POST", {
             cinema_name: val("addCinema_name"),

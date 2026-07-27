@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
-    "build": "echo build"
+    "build": "echo build",
+    "seed:now-playing": "node scripts/seed-now-playing.js"
   },
   "keywords": [],
   "author": "",
@@ -30,4 +31,3 @@
     "sequelize": "^6.37.7"
   }
 }
-

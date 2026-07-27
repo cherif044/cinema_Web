@@ -1,112 +1,7 @@
 const router = require("express").Router();
 const models = require("../../models/connector");
 const { Op, fn, col } = require("sequelize");
-
-const DEMO_POSTERS = {
-  inception:
-    "https://en.wikipedia.org/wiki/Special:FilePath/Inception%20(2010)%20theatrical%20poster.jpg",
-  interstellar:
-    "https://en.wikipedia.org/wiki/Special:FilePath/Interstellar%20film%20poster.jpg",
-  darkKnight:
-    "https://en.wikipedia.org/wiki/Special:FilePath/The%20Dark%20Knight%20(2008%20film).jpg",
-  dune:
-    "https://en.wikipedia.org/wiki/Special:FilePath/Dune%20(2021%20film).jpg",
-};
-
-const DEMO_MOVIES = [
-  {
-    movie_id: 901,
-    movie_name: "Inception",
-    movie_genre: "Sci-Fi",
-    duration_mins: 148,
-    poster_url: DEMO_POSTERS.inception,
-  },
-  {
-    movie_id: 902,
-    movie_name: "Interstellar",
-    movie_genre: "Sci-Fi",
-    duration_mins: 169,
-    poster_url: DEMO_POSTERS.interstellar,
-  },
-  {
-    movie_id: 903,
-    movie_name: "The Dark Knight",
-    movie_genre: "Action",
-    duration_mins: 152,
-    poster_url: DEMO_POSTERS.darkKnight,
-  },
-  {
-    movie_id: 904,
-    movie_name: "Dune",
-    movie_genre: "Adventure",
-    duration_mins: 155,
-    poster_url: DEMO_POSTERS.dune,
-  },
-];
-
-function addMinutes(date, minutes) {
-  return new Date(date.getTime() + minutes * 60 * 1000);
-}
-
-function createDemoShowtimes(cinema) {
-  const baseDay = new Date();
-  baseDay.setHours(11, 30, 0, 0);
-
-  const hallProfiles = [
-    { hall_id: 1, type: "premium", capacity: 72, seatsLeft: 18 },
-    { hall_id: 2, type: "gold", capacity: 54, seatsLeft: 21 },
-    { hall_id: 3, type: "standard", capacity: 88, seatsLeft: 34 },
-  ];
-
-  const schedule = [
-    { movie: DEMO_MOVIES[0], dayOffset: 0, startHour: 12, startMinute: 15, hall: hallProfiles[0] },
-    { movie: DEMO_MOVIES[1], dayOffset: 1, startHour: 15, startMinute: 40, hall: hallProfiles[1] },
-    { movie: DEMO_MOVIES[2], dayOffset: 2, startHour: 13, startMinute: 0, hall: hallProfiles[2] },
-    { movie: DEMO_MOVIES[3], dayOffset: 2, startHour: 18, startMinute: 20, hall: hallProfiles[0] },
-    { movie: DEMO_MOVIES[0], dayOffset: 1, startHour: 11, startMinute: 50, hall: hallProfiles[1] },
-    { movie: DEMO_MOVIES[1], dayOffset: 2, startHour: 16, startMinute: 10, hall: hallProfiles[2] },
-    { movie: DEMO_MOVIES[2], dayOffset: 2, startHour: 19, startMinute: 30, hall: hallProfiles[0] },
-  ];
-
-  return schedule.map((slot, index) => {
-    const dayStart = new Date(baseDay);
-    dayStart.setDate(dayStart.getDate() + slot.dayOffset);
-
-    const start = new Date(dayStart);
-    start.setHours(slot.startHour, slot.startMinute, 0, 0);
-
-    const end = addMinutes(start, slot.movie.duration_mins);
-
-    return {
-      showtime_id: 0,
-      cinema_id: cinema.cinema_id,
-      hall_id: slot.hall.hall_id,
-      movie_id: slot.movie.movie_id,
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
-      hall_capacity_active: slot.hall.capacity,
-      registered_active: Math.min(slot.hall.capacity - 8, slot.hall.capacity),
-      available_active: slot.hall.seatsLeft,
-      seat_statuses: [],
-      Movie: {
-        ...slot.movie,
-      },
-      Cinema: {
-        cinema_id: cinema.cinema_id,
-        cinema_name: cinema.cinema_name,
-        location: cinema.location,
-        logo_url: cinema.logo_url,
-      },
-      Hall: {
-        cinema_id: cinema.cinema_id,
-        hall_id: slot.hall.hall_id,
-        type: slot.hall.type,
-      },
-      is_demo: true,
-      demo_index: index + 1,
-    };
-  });
-}
+const { createDemoShowtimes } = require("../../data/nowPlaying");
 
 /**
  * FIXES:
@@ -149,15 +44,15 @@ router.get("/retrieve_showtimes", async (req, res) => {
     if (!cinema) {
       const demoShowtimes = createDemoShowtimes({
         cinema_id,
-        cinema_name: `Demo Cinema ${cinema_id}`,
-        location: "Demo location",
+        cinema_name: `Preview Cinema ${cinema_id}`,
+        location: "Preview location",
         logo_url: null,
       });
 
       return res.status(200).json({
         ok: true,
         demo: true,
-        message: "Cinema not found in the database. Showing a 3-day demo schedule.",
+        message: "Cinema not found in the database. Showing a current now-playing preview schedule.",
         data: demoShowtimes,
       });
     }
@@ -197,12 +92,10 @@ router.get("/retrieve_showtimes", async (req, res) => {
     });
 
     if (!showtimes.length) {
-      const demoShowtimes = createDemoShowtimes(cinema);
       return res.status(200).json({
         ok: true,
-        message: "No live showtimes found. Showing a 3-day demo schedule.",
-        demo: true,
-        data: demoShowtimes,
+        message: "No live showtimes found for this cinema in the next 48 hours.",
+        data: [],
       });
     }
 
@@ -314,15 +207,15 @@ router.get("/retrieve_showtimes", async (req, res) => {
 
     const demoCinema = {
       cinema_id,
-      cinema_name: "Demo Cinema",
-      location: "Demo location",
+      cinema_name: "Preview Cinema",
+      location: "Preview location",
       logo_url: null,
     };
 
     return res.status(500).json({
       ok: true,
       demo: true,
-      message: "Database error while retrieving showtimes. Showing a 3-day demo schedule.",
+      message: "Database error while retrieving showtimes. Showing a current now-playing preview schedule.",
       data: createDemoShowtimes(demoCinema),
     });
   }
