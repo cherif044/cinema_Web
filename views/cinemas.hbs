@@ -733,6 +733,184 @@
       box-shadow:none;
       background:var(--surface-muted);
     }
+
+    .regs-overlay{
+      background:rgba(15,23,42,0.34);
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
+    }
+
+    .regs-panel{
+      width:min(680px, calc(100vw - 28px));
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      box-shadow:0 24px 60px rgba(16,24,40,0.18);
+      color:var(--ink);
+    }
+
+    .regs-header{
+      padding:18px 20px;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+    }
+
+    .regs-pill{
+      background:var(--accent-soft);
+      border:1px solid #d1e0ff;
+      color:var(--accent);
+      box-shadow:none;
+    }
+
+    .regs-title{
+      color:var(--ink);
+      font-size:1.05rem;
+      font-weight:700;
+      letter-spacing:0;
+    }
+
+    .regs-sub{
+      color:var(--muted);
+      font-weight:500;
+    }
+
+    .regs-body{
+      padding:16px 20px 20px;
+      background:#fff;
+      display:grid;
+      gap:12px;
+    }
+
+    .regs-card{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:10px;
+      box-shadow:none;
+      padding:14px;
+    }
+
+    .regs-card:hover{
+      transform:none;
+      box-shadow:none;
+      border-color:#c7d7fe;
+    }
+
+    .regs-card-title{
+      color:var(--ink);
+      font-size:1rem;
+      font-weight:700;
+    }
+
+    .regs-meta{
+      color:var(--muted);
+      gap:10px;
+      font-weight:500;
+    }
+
+    .regs-chip,
+    .seat-tag{
+      background:var(--surface-muted);
+      border:1px solid var(--line);
+      color:#344054;
+      box-shadow:none;
+      border-radius:999px;
+      font-weight:600;
+    }
+
+    .regs-seats{
+      gap:6px;
+    }
+
+    .regs-empty{
+      background:var(--surface-muted);
+      border:1px solid var(--line);
+      border-radius:10px;
+      color:var(--muted);
+      box-shadow:none;
+    }
+
+    .cancel-btn{
+      background:#fff;
+      border:1px solid #fecdca;
+      color:#b42318;
+      box-shadow:none;
+      border-radius:8px;
+      font-weight:600;
+    }
+
+    .cancel-btn:hover{
+      transform:none;
+      background:#fff5f5;
+      box-shadow:none;
+    }
+
+    .cancel-modal{
+      background:rgba(15,23,42,0.20);
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
+    }
+
+    .cancel-sheet{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      box-shadow:0 20px 45px rgba(16,24,40,0.18);
+    }
+
+    .cancel-head,
+    .cancel-actions{
+      background:#fff;
+      border-color:var(--line);
+    }
+
+    .cancel-title{
+      color:var(--ink);
+      font-weight:700;
+    }
+
+    .cancel-sub{
+      color:var(--muted);
+    }
+
+    .btn-darkglass{
+      background:#fff;
+      border:1px solid var(--line);
+      color:var(--ink);
+      box-shadow:none;
+      border-radius:8px;
+      font-weight:600;
+    }
+
+    .btn-darkglass:hover{
+      transform:none;
+      background:#f8fafc;
+    }
+
+    .btn-dangerglass{
+      background:#d92d20;
+      border-color:#d92d20;
+      color:#fff;
+    }
+
+    .btn-dangerglass:hover{
+      background:#b42318;
+      color:#fff;
+    }
+
+    .seat-choice{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:10px;
+      color:var(--ink);
+      box-shadow:none;
+    }
+
+    .seat-choice:hover,
+    .seat-choice.active{
+      background:var(--accent-soft);
+      border-color:#b2ccff;
+      transform:none;
+    }
   </style>
 </head>
 
@@ -742,11 +920,6 @@
       <h1 class="brand">Chinema</h1>
 
       <div class="d-flex align-items-center gap-2 flex-wrap">
-        <span class="pill text-white" style="background: rgba(255,255,255,0.15);">
-          <i class="bi bi-ticket-perforated"></i>
-          Choose a Cinema
-        </span>
-
         <button id="regsBtn" class="btn glass-btn btn-sm">
           <i class="bi bi-ticket-perforated"></i>
           Show Registrations
@@ -1060,6 +1233,12 @@
       await loadRegistrations();
     });
 
+    if (new URLSearchParams(window.location.search).get("openRegistrations") === "1") {
+      openOverlay();
+      loadRegistrations();
+      window.history.replaceState({}, "", "/show_cinemas");
+    }
+
     regsClose.addEventListener("click", closeOverlay);
 
     regsOverlay.addEventListener("click", (e) => {
@@ -1281,13 +1460,8 @@
       // registrations = [{ booking_id, seat_id, created_at }]
       const regs = Array.isArray(st.registrations) ? st.registrations : [];
 
-      // Dedup seats + booking ids
-      const regIds = [...new Set(regs.map(r => r.booking_id).filter(Boolean))];
+      // Dedup seats
       const seatIds = [...new Set(regs.map(r => r.seat_id).filter(Boolean))];
-
-      const regChips = regIds.length
-        ? regIds.map(id => `<span class="seat-tag"><i class="bi bi-receipt"></i><b>#${escapeHtml(id)}</b></span>`).join("")
-        : `<div class="text-white-50">—</div>`;
 
       const seatChips = seatIds.length
         ? seatIds.map(id => `<span class="seat-tag"><i class="bi bi-person-check"></i>Seat <b>${escapeHtml(id)}</b></span>`).join("")
@@ -1321,20 +1495,11 @@
             </div>
           </div>
 
-          <div style="margin-top:12px; display:grid; gap:10px;">
-            <div>
-              <div style="font-weight:900; color:rgba(255,255,255,0.85); font-size:.85rem; letter-spacing:.3px; margin-bottom:6px;">
-                Registration IDs
-              </div>
-              <div class="regs-seats">${regChips}</div>
+          <div style="margin-top:12px;">
+            <div style="font-weight:700; color:#344054; font-size:.82rem; margin-bottom:6px;">
+              Seats
             </div>
-
-            <div>
-              <div style="font-weight:900; color:rgba(255,255,255,0.85); font-size:.85rem; letter-spacing:.3px; margin-bottom:6px;">
-                Seat IDs
-              </div>
-              <div class="regs-seats">${seatChips}</div>
-            </div>
+            <div class="regs-seats">${seatChips}</div>
           </div>
         </div>
       `;
