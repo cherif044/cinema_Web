@@ -32,7 +32,7 @@ router.get("/retrieve_cinemas",async (req, res) => {
     });
   } catch (err) {
     console.error("retrieve_cinemas error:", err);
-    res.status(500).json({
+    res.status(200).json({
       ok: true,
       demo: true,
       message: "Using demo cinemas because the database is unavailable",

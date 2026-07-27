@@ -238,7 +238,7 @@ router.get("/retrieve_showtimes", async (req, res) => {
       logo_url: null,
     };
 
-    return res.status(500).json({
+    return res.status(200).json({
       ok: true,
       demo: true,
       message: "Database error while retrieving showtimes. Showing a current now-playing preview schedule.",
