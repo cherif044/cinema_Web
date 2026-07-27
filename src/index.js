@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
 const { body, validationResult } = require('express-validator');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
@@ -55,6 +56,7 @@ app.set('views', path.join(__dirname, '../views'));
 // Parse body BEFORE routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Static files
 app.use(express.static(path.join(__dirname, '../public')));
