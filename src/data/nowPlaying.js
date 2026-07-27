@@ -74,19 +74,60 @@ const HALLS = [
   { hall_id: 3, type: "standard", capacity: 90 },
 ];
 
+const CINEMA_TIME_ZONE = "Africa/Cairo";
+
 function addMinutes(date, minutes) {
   return new Date(date.getTime() + minutes * 60 * 1000);
 }
 
-function startOfDay(date) {
-  const day = new Date(date);
-  day.setHours(0, 0, 0, 0);
-  return day;
+function getZonedParts(date, timeZone = CINEMA_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour),
+    minute: Number(values.minute),
+    second: Number(values.second),
+  };
+}
+
+function getTimeZoneOffsetMs(date, timeZone = CINEMA_TIME_ZONE) {
+  const parts = getZonedParts(date, timeZone);
+  const localAsUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  );
+  return localAsUtc - date.getTime();
+}
+
+function makeDateInTimeZone(year, month, day, hour, minute, timeZone = CINEMA_TIME_ZONE) {
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
+  const firstOffset = getTimeZoneOffsetMs(utcGuess, timeZone);
+  const firstResult = new Date(utcGuess.getTime() - firstOffset);
+  const correctedOffset = getTimeZoneOffsetMs(firstResult, timeZone);
+  return new Date(utcGuess.getTime() - correctedOffset);
 }
 
 function makeDailySchedule(movieRecords, now = new Date(), days = 2) {
   const records = movieRecords.length ? movieRecords : CURRENT_MOVIES;
   const schedule = [];
+  const today = getZonedParts(now);
   const cleanSlotsByHall = {
     1: [
       ["11:00", "13:00"],
@@ -109,22 +150,29 @@ function makeDailySchedule(movieRecords, now = new Date(), days = 2) {
   };
 
   for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
-    const day = startOfDay(now);
-    day.setDate(day.getDate() + dayOffset);
-
     for (const hall of HALLS) {
       const slots = cleanSlotsByHall[hall.hall_id] || [];
 
       for (const [slotIndex, [startLabel, endLabel]] of slots.entries()) {
         const [startHour, startMinute] = startLabel.split(":").map(Number);
         const [endHour, endMinute] = endLabel.split(":").map(Number);
-        const start = new Date(day);
-        start.setHours(startHour, startMinute, 0, 0);
+        const start = makeDateInTimeZone(
+          today.year,
+          today.month,
+          today.day + dayOffset,
+          startHour,
+          startMinute
+        );
 
         if (start <= addMinutes(now, 20)) continue;
 
-        const end = new Date(day);
-        end.setHours(endHour, endMinute, 0, 0);
+        const end = makeDateInTimeZone(
+          today.year,
+          today.month,
+          today.day + dayOffset,
+          endHour,
+          endMinute
+        );
         if (end <= start) end.setDate(end.getDate() + 1);
 
         const movieIndex = (
