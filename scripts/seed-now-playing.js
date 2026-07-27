@@ -6,9 +6,11 @@ const models = require("../src/models/connector");
 const REQUIRED_ENV = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASS"];
 
 async function main() {
-  const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
-  if (missing.length) {
-    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+  if (!process.env.DATABASE_URL) {
+    const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
+    if (missing.length) {
+      throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    }
   }
 
   await models.sequelize.authenticate();

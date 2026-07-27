@@ -1,9 +1,13 @@
 const SEEDED_CINEMA = {
-  cinema_name: "Chinema Cairo Festival",
+  cinema_name: "CFC Cinema",
   location: "Cairo Festival City",
   logo_url: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80",
   location_url: "https://maps.google.com/?q=Cairo+Festival+City+Mall",
 };
+
+const LEGACY_CINEMA_NAMES = [
+  "Chinema Cairo Festival",
+];
 
 const CURRENT_MOVIES = [
   {
@@ -70,23 +74,6 @@ const HALLS = [
   { hall_id: 3, type: "standard", capacity: 90 },
 ];
 
-function hashSeed(input) {
-  let hash = 2166136261;
-  for (const char of String(input)) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function makeRng(seed) {
-  let state = seed >>> 0;
-  return () => {
-    state = Math.imul(1664525, state) + 1013904223;
-    return (state >>> 0) / 4294967296;
-  };
-}
-
 function addMinutes(date, minutes) {
   return new Date(date.getTime() + minutes * 60 * 1000);
 }
@@ -99,44 +86,60 @@ function startOfDay(date) {
 
 function makeDailySchedule(movieRecords, now = new Date(), days = 2) {
   const records = movieRecords.length ? movieRecords : CURRENT_MOVIES;
-  const seedBase = now.toISOString().slice(0, 10);
   const schedule = [];
+  const cleanSlotsByHall = {
+    1: [
+      ["11:00", "13:00"],
+      ["14:00", "16:00"],
+      ["17:00", "19:00"],
+      ["20:00", "22:00"],
+    ],
+    2: [
+      ["12:00", "14:00"],
+      ["16:00", "18:00"],
+      ["19:00", "21:00"],
+      ["21:30", "23:30"],
+    ],
+    3: [
+      ["10:30", "12:30"],
+      ["13:30", "15:30"],
+      ["16:30", "18:30"],
+      ["19:30", "21:30"],
+    ],
+  };
 
   for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
     const day = startOfDay(now);
     day.setDate(day.getDate() + dayOffset);
 
     for (const hall of HALLS) {
-      const rng = makeRng(hashSeed(`${seedBase}-${dayOffset}-${hall.hall_id}`));
-      let cursor = new Date(day);
-      cursor.setHours(11, 0 + Math.floor(rng() * 45), 0, 0);
+      const slots = cleanSlotsByHall[hall.hall_id] || [];
 
-      const closing = new Date(day);
-      closing.setHours(23, 40, 0, 0);
+      for (const [slotIndex, [startLabel, endLabel]] of slots.entries()) {
+        const [startHour, startMinute] = startLabel.split(":").map(Number);
+        const [endHour, endMinute] = endLabel.split(":").map(Number);
+        const start = new Date(day);
+        start.setHours(startHour, startMinute, 0, 0);
 
-      let previousMovieKey = null;
+        if (start <= addMinutes(now, 20)) continue;
 
-      while (cursor < closing) {
-        if (cursor <= addMinutes(now, 20)) {
-          cursor = addMinutes(cursor, 35 + Math.floor(rng() * 35));
-          continue;
-        }
+        const end = new Date(day);
+        end.setHours(endHour, endMinute, 0, 0);
+        if (end <= start) end.setDate(end.getDate() + 1);
 
-        const pool = records.filter((movie) => movie.key !== previousMovieKey);
-        const movie = pool[Math.floor(rng() * pool.length)] || records[0];
-        const end = addMinutes(cursor, movie.duration_mins);
+        const movieIndex = (
+          dayOffset * HALLS.length * slots.length +
+          (hall.hall_id - 1) * slots.length +
+          slotIndex
+        ) % records.length;
 
-        if (end > closing) break;
-
+        const movie = records[movieIndex] || records[0];
         schedule.push({
           hall,
           movie,
-          start_time: new Date(cursor),
+          start_time: start,
           end_time: end,
         });
-
-        previousMovieKey = movie.key;
-        cursor = addMinutes(end, 22 + Math.floor(rng() * 24));
       }
     }
   }
@@ -190,6 +193,7 @@ function createDemoShowtimes(cinema, now = new Date()) {
 module.exports = {
   CURRENT_MOVIES,
   HALLS,
+  LEGACY_CINEMA_NAMES,
   SEEDED_CINEMA,
   createDemoShowtimes,
   makeDailySchedule,

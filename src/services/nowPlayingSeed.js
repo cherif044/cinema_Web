@@ -3,6 +3,7 @@ const models = require("../models/connector");
 const {
   CURRENT_MOVIES,
   HALLS,
+  LEGACY_CINEMA_NAMES,
   SEEDED_CINEMA,
   makeDailySchedule,
 } = require("../data/nowPlaying");
@@ -27,6 +28,36 @@ async function updateOrCreate(Model, where, values, transaction) {
   return { row: created, created: true };
 }
 
+async function updateOrCreateSeededCinema(transaction) {
+  const cinema = await models.Cinema.findOne({
+    where: {
+      [Op.or]: [
+        { cinema_name: SEEDED_CINEMA.cinema_name },
+        { cinema_name: { [Op.in]: LEGACY_CINEMA_NAMES } },
+        { location: SEEDED_CINEMA.location },
+      ],
+    },
+    order: [["cinema_id", "ASC"]],
+    transaction,
+  });
+
+  if (cinema) {
+    await cinema.update(
+      {
+        cinema_name: SEEDED_CINEMA.cinema_name,
+        location: SEEDED_CINEMA.location,
+        logo_url: SEEDED_CINEMA.logo_url,
+        location_url: SEEDED_CINEMA.location_url,
+      },
+      { transaction }
+    );
+    return { row: cinema, created: false };
+  }
+
+  const created = await models.Cinema.create(SEEDED_CINEMA, { transaction });
+  return { row: created, created: true };
+}
+
 async function replaceNowPlayingSchedule() {
   return models.sequelize.transaction(async (transaction) => {
     const now = new Date();
@@ -43,28 +74,19 @@ async function replaceNowPlayingSchedule() {
     let deletedRegistrations = 0;
     let deletedShowtimes = 0;
 
-    if (futureShowtimeIds.length) {
-      deletedRegistrations = await models.Registration.destroy({
-        where: { showtime_id: { [Op.in]: futureShowtimeIds } },
-        transaction,
-      });
+    deletedRegistrations = await models.Registration.destroy({
+      where: { booking_id: { [Op.ne]: null } },
+      transaction,
+    });
 
+    if (futureShowtimeIds.length) {
       deletedShowtimes = await models.Showtime.destroy({
         where: { showtime_id: { [Op.in]: futureShowtimeIds } },
         transaction,
       });
     }
 
-    const { row: cinema, created: createdCinema } = await updateOrCreate(
-      models.Cinema,
-      { cinema_name: SEEDED_CINEMA.cinema_name },
-      {
-        location: SEEDED_CINEMA.location,
-        logo_url: SEEDED_CINEMA.logo_url,
-        location_url: SEEDED_CINEMA.location_url,
-      },
-      transaction
-    );
+    const { row: cinema, created: createdCinema } = await updateOrCreateSeededCinema(transaction);
 
     const movieRows = [];
     let createdMovies = 0;
