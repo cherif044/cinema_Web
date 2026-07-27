@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: process.env.DOTENV_CONFIG_PATH || ".env" });
 
 const { replaceNowPlayingSchedule } = require("../src/services/nowPlayingSeed");
 const models = require("../src/models/connector");
