@@ -2,6 +2,7 @@ const router = require("express").Router();
 const models = require("../../models/connector");
 const { Op, fn, col } = require("sequelize");
 const { createDemoShowtimes } = require("../../data/nowPlaying");
+const { ensureNowPlayingSchedule } = require("../../services/nowPlayingSeed");
 
 /**
  * FIXES:
@@ -40,6 +41,8 @@ router.get("/retrieve_showtimes", async (req, res) => {
   }
 
   try {
+    await ensureNowPlayingSchedule();
+
     const cinema = await models.Cinema.findByPk(cinema_id);
     if (!cinema) {
       const demoShowtimes = createDemoShowtimes({

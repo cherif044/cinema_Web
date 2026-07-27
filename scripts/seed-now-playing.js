@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { replaceNowPlayingSchedule } = require("../src/routes/admin/seed_now_playing");
+const { replaceNowPlayingSchedule } = require("../src/services/nowPlayingSeed");
 const models = require("../src/models/connector");
 
 const REQUIRED_ENV = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASS"];

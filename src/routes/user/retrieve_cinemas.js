@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const models = require("../../models/connector");
 const { SEEDED_CINEMA } = require("../../data/nowPlaying");
+const { ensureNowPlayingSchedule } = require("../../services/nowPlayingSeed");
 
 const DEMO_CINEMAS = [
   {
@@ -11,6 +12,8 @@ const DEMO_CINEMAS = [
 
 router.get("/retrieve_cinemas",async (req, res) => {
   try {
+    await ensureNowPlayingSchedule();
+
     // get all cinemas
     const cinemas = await models.Cinema.findAll();
 
