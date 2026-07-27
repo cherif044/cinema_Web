@@ -778,7 +778,86 @@
       padding:16px 20px 20px;
       background:#fff;
       display:grid;
+      gap:8px;
+    }
+
+    .reg-row{
+      display:grid;
+      grid-template-columns:1fr auto;
+      align-items:center;
       gap:12px;
+      padding:12px 14px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:10px;
+      box-shadow:none;
+    }
+
+    .reg-row-main{
+      min-width:0;
+    }
+
+    .reg-row-title{
+      color:var(--ink);
+      font-size:.98rem;
+      font-weight:700;
+      line-height:1.25;
+      word-break:break-word;
+    }
+
+    .reg-row-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px 12px;
+      margin-top:5px;
+      color:var(--muted);
+      font-size:.86rem;
+      font-weight:500;
+      line-height:1.35;
+    }
+
+    .reg-row-meta span{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      min-width:0;
+    }
+
+    .reg-row-seat{
+      color:var(--ink);
+      font-weight:700;
+    }
+
+    .reg-row-cancel{
+      justify-self:end;
+      min-width:82px;
+      border:1px solid #fecdca;
+      background:#fff;
+      color:#b42318;
+      border-radius:8px;
+      padding:8px 12px;
+      font-weight:700;
+      line-height:1;
+    }
+
+    .reg-row-cancel:hover{
+      background:#fff5f5;
+    }
+
+    .reg-row-cancel:disabled{
+      cursor:not-allowed;
+      opacity:.6;
+    }
+
+    @media (max-width:576px){
+      .reg-row{
+        grid-template-columns:1fr;
+      }
+
+      .reg-row-cancel{
+        justify-self:stretch;
+        width:100%;
+      }
     }
 
     .regs-card{
@@ -1419,90 +1498,111 @@
       }
     }
 
-    function renderRegistrations(items){
-      // If a showtime has 0 registrations, hide it (since nothing to cancel / show)
-      const cleaned = items.filter(st => Array.isArray(st.registrations) && st.registrations.length > 0);
-      if (!cleaned.length){
-        regsBody.innerHTML = `<div class="regs-empty">No active registrations.</div>`;
-        regsSub.textContent = "No active showtimes";
-        return;
-      }
-
-      regsBody.innerHTML = cleaned.map(renderRegCard).join("");
-
-      // wire cancel buttons
-      regsBody.querySelectorAll("[data-action='open-cancel']").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-
-          const showtimeId = Number(btn.dataset.showtimeId);
-          const st = cleaned.find(x => Number(x.showtime_id) === showtimeId);
-          if (!st) return;
-
-          openCancelModal(st, btn);
-        });
+    function getRegistrationRows(items){
+      return items.flatMap(st => {
+        const regs = Array.isArray(st.registrations) ? st.registrations : [];
+        return regs.map(reg => ({ st, reg }));
+      }).sort((a, b) => {
+        const timeDiff = new Date(a.st.start_time) - new Date(b.st.start_time);
+        if (timeDiff) return timeDiff;
+        return Number(a.reg.seat_id) - Number(b.reg.seat_id);
       });
     }
 
-    function renderRegCard(st) {
+    function renderRegistrations(items){
+      const rows = getRegistrationRows(items);
+
+      if (!rows.length){
+        regsBody.innerHTML = `<div class="regs-empty">No active registrations.</div>`;
+        regsSub.textContent = "No active seats";
+        return;
+      }
+
+      regsSub.textContent = `${rows.length} active seat${rows.length === 1 ? "" : "s"}`;
+      regsBody.innerHTML = rows.map(renderRegistrationRow).join("");
+
+      regsBody.querySelectorAll("[data-action='cancel-registration']").forEach(btn => {
+        btn.addEventListener("click", () => cancelRegistration(btn));
+      });
+    }
+
+    function renderRegistrationRow({ st, reg }) {
       const movie = st.Movie || {};
       const cinema = st.Cinema || {};
-
       const title = movie.movie_name || "Movie";
-      const start = st.start_time;
-      const end = st.end_time;
+      const cinemaLabel = cinema.cinema_name ? cinema.cinema_name : `Cinema ${st.cinema_id}`;
+      const location = cinema.location ? `, ${cinema.location}` : "";
+      const hallLabel = st.hall_id ? `Hall ${st.hall_id}` : "Hall";
+      const bookingId = reg.booking_id;
 
-      const cinemaLabel = cinema.cinema_name ? escapeHtml(cinema.cinema_name) : `Cinema ${escapeHtml(st.cinema_id)}`;
-      const location = cinema.location ? ` • ${escapeHtml(cinema.location)}` : "";
-      const hallLabel = st.hall_id ? `Hall ${escapeHtml(st.hall_id)}` : "Hall";
-
-      // registrations = [{ booking_id, seat_id, created_at }]
-      const regs = Array.isArray(st.registrations) ? st.registrations : [];
-
-      // Dedup seats
-      const seatIds = [...new Set(regs.map(r => r.seat_id).filter(Boolean))];
-
-      const seatChips = seatIds.length
-        ? seatIds.map(id => `<span class="seat-tag"><i class="bi bi-person-check"></i>Seat <b>${escapeHtml(id)}</b></span>`).join("")
-        : `<div class="text-white-50">—</div>`;
-
-      // ✅ Cancel button on the right of header
       return `
-        <div class="regs-card">
-          <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
-            <div style="min-width:0;">
-              <h3 class="regs-card-title">${escapeHtml(title)}</h3>
-              <div class="regs-meta" style="margin-top:6px;">
-                <span><i class="bi bi-geo-alt"></i> ${cinemaLabel}${location}</span>
-                <span><i class="bi bi-door-closed"></i> ${hallLabel}</span>
-                <span><i class="bi bi-stopwatch"></i> ${fmtTime(start)} → ${fmtTime(end)}</span>
-              </div>
-            </div>
-
-            <div class="d-flex flex-column align-items-end gap-2">
-              <span class="regs-chip"><i class="bi bi-clock"></i> ${fmtTime(start)} • ${fmtDate(start)}</span>
-              <button
-                class="cancel-btn"
-                data-action="open-cancel"
-                data-showtime-id="${escapeHtml(st.showtime_id)}"
-                type="button"
-                title="Cancel a seat from this showtime"
-              >
-                <i class="bi bi-x-circle"></i>
-                Cancel
-              </button>
+        <div class="reg-row" data-booking-id="${escapeHtml(bookingId)}">
+          <div class="reg-row-main">
+            <div class="reg-row-title">${escapeHtml(title)}</div>
+            <div class="reg-row-meta">
+              <span><i class="bi bi-calendar-event"></i>${fmtDate(st.start_time)}</span>
+              <span><i class="bi bi-clock"></i>${fmtTime(st.start_time)}</span>
+              <span><i class="bi bi-building"></i>${escapeHtml(cinemaLabel)}${escapeHtml(location)}</span>
+              <span><i class="bi bi-door-closed"></i>${escapeHtml(hallLabel)}</span>
+              <span class="reg-row-seat"><i class="bi bi-ticket-perforated"></i>Seat ${escapeHtml(reg.seat_id)}</span>
             </div>
           </div>
-
-          <div style="margin-top:12px;">
-            <div style="font-weight:700; color:#344054; font-size:.82rem; margin-bottom:6px;">
-              Seats
-            </div>
-            <div class="regs-seats">${seatChips}</div>
-          </div>
+          <button
+            class="reg-row-cancel"
+            data-action="cancel-registration"
+            data-booking-id="${escapeHtml(bookingId)}"
+            type="button"
+          >
+            Cancel
+          </button>
         </div>
       `;
+    }
+
+    async function cancelRegistration(btn){
+      const bookingId = Number(btn.dataset.bookingId);
+      if (!bookingId) return;
+
+      btn.disabled = true;
+      btn.textContent = "Cancelling...";
+
+      try {
+        const url = `${CANCEL_API}?registration_id=${encodeURIComponent(bookingId)}`;
+        const res = await fetch(url, {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "Accept": "application/json" }
+        });
+
+        if (res.status === 401){
+          window.location.href = LOGIN_PAGE;
+          return;
+        }
+
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload?.ok){
+          btn.disabled = false;
+          btn.textContent = "Cancel";
+          showToast("Cancel failed", payload?.message || `Cancel failed (${res.status})`);
+          return;
+        }
+
+        currentRegItems = currentRegItems.map(st => {
+          const regs = Array.isArray(st.registrations) ? st.registrations : [];
+          return {
+            ...st,
+            registrations: regs.filter(r => Number(r.booking_id) !== bookingId)
+          };
+        });
+
+        renderRegistrations(currentRegItems);
+        showToast("Booking cancelled", `Seat registration #${bookingId} was cancelled.`);
+      } catch (err){
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = "Cancel";
+        showToast("Cancel failed", "Network/server error while cancelling.");
+      }
     }
   </script>
 
