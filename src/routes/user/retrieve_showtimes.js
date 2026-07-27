@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const models = require("../../models/connector");
 const { Op, fn, col } = require("sequelize");
-const { createDemoShowtimes } = require("../../data/nowPlaying");
+const { createDemoShowtimes, SEEDED_CINEMA } = require("../../data/nowPlaying");
 const { ensureNowPlayingSchedule } = require("../../services/nowPlayingSeed");
 
 /**
@@ -43,7 +43,18 @@ router.get("/retrieve_showtimes", async (req, res) => {
   try {
     await ensureNowPlayingSchedule();
 
-    const cinema = await models.Cinema.findByPk(cinema_id);
+    let effectiveCinemaId = cinema_id;
+    let cinema = await models.Cinema.findByPk(cinema_id);
+    const seededCinema = await models.Cinema.findOne({
+      where: { cinema_name: SEEDED_CINEMA.cinema_name },
+      attributes: ["cinema_id", "cinema_name", "location", "logo_url"],
+    });
+
+    if (!cinema && seededCinema) {
+      cinema = seededCinema;
+      effectiveCinemaId = Number(seededCinema.cinema_id);
+    }
+
     if (!cinema) {
       const demoShowtimes = createDemoShowtimes({
         cinema_id,
@@ -64,9 +75,9 @@ router.get("/retrieve_showtimes", async (req, res) => {
     const from = new Date(now.getTime() + 5 * 60 * 1000);
     const to = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-    const showtimes = await models.Showtime.findAll({
+    const fetchShowtimes = (id) => models.Showtime.findAll({
       where: {
-        cinema_id,
+        cinema_id: id,
         start_time: { [Op.gte]: from, [Op.lt]: to },
       },
       attributes: [
@@ -94,10 +105,22 @@ router.get("/retrieve_showtimes", async (req, res) => {
       order: [["start_time", "ASC"]],
     });
 
+    let showtimes = await fetchShowtimes(effectiveCinemaId);
+
+    if (
+      !showtimes.length &&
+      seededCinema &&
+      Number(seededCinema.cinema_id) !== effectiveCinemaId
+    ) {
+      cinema = seededCinema;
+      effectiveCinemaId = Number(seededCinema.cinema_id);
+      showtimes = await fetchShowtimes(effectiveCinemaId);
+    }
+
     if (!showtimes.length) {
       return res.status(200).json({
         ok: true,
-        message: "No live showtimes found for this cinema in the next 48 hours.",
+        message: "No live showtimes found in the next 48 hours.",
         data: [],
       });
     }
@@ -108,7 +131,7 @@ router.get("/retrieve_showtimes", async (req, res) => {
     // 1) Capacity per hall (ACTIVE seats only)
     const capacityRows = await models.Seat.findAll({
       where: {
-        cinema_id,
+        cinema_id: effectiveCinemaId,
         hall_id: { [Op.in]: hallIds },
         status: ACTIVE_SEAT_STATUS,
       },
@@ -124,7 +147,7 @@ router.get("/retrieve_showtimes", async (req, res) => {
     // 2) Seat statuses per hall (send active/inactive list to frontend)
     const seatStatusRows = await models.Seat.findAll({
       where: {
-        cinema_id,
+        cinema_id: effectiveCinemaId,
         hall_id: { [Op.in]: hallIds },
       },
       attributes: ["hall_id", "seat_id", "seat_row", "seat_col", "seat_type", "status"],
@@ -149,7 +172,7 @@ router.get("/retrieve_showtimes", async (req, res) => {
     // ✅ FIXED: COUNT DISTINCT + force Seat cinema_id/hall_id match to Registration row
     const regRows = await models.Registration.findAll({
       where: {
-        cinema_id,
+        cinema_id: effectiveCinemaId,
         hall_id: { [Op.in]: hallIds }, // safety
         showtime_id: { [Op.in]: showtimeIds },
       },

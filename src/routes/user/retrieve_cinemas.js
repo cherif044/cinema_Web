@@ -14,10 +14,11 @@ router.get("/retrieve_cinemas",async (req, res) => {
   try {
     await ensureNowPlayingSchedule();
 
-    // get all cinemas
-    const cinemas = await models.Cinema.findAll();
+    const cinema = await models.Cinema.findOne({
+      where: { cinema_name: SEEDED_CINEMA.cinema_name },
+    });
 
-    if (!cinemas.length) {
+    if (!cinema) {
       return res.json({
         ok: true,
         demo: true,
@@ -27,7 +28,7 @@ router.get("/retrieve_cinemas",async (req, res) => {
 
     res.json({
       ok: true,
-      data: cinemas
+      data: [cinema]
     });
   } catch (err) {
     console.error("retrieve_cinemas error:", err);
