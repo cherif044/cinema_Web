@@ -100,6 +100,8 @@ router.get("/retrieve_showtimes", async (req, res) => {
         {
           model: models.Hall,
           attributes: ["cinema_id", "hall_id", "type"],
+          where: { cinema_id: id },
+          required: false,
         },
       ],
       order: [["start_time", "ASC"]],
