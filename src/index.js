@@ -4,8 +4,6 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const { body, validationResult } = require('express-validator');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
 const requireAuth=require('./middleware/logged_in');
 const requireAdmin=require('./middleware/admin_check');
 const registerLimiter=require('./limiters/signupLimiter');
@@ -119,7 +117,7 @@ app.get("/admin_panel",
 (async () => {
   try {
     await models.sequelize.authenticate();
-    console.log("Connected to MySQL (cold start)");
+    console.log(`Connected to ${models.sequelize.getDialect()} (cold start)`);
   } catch (err) {
     console.error("DB connection failed (cold start):", err.message);
   }

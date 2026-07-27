@@ -1,19 +1,21 @@
 const session = require("express-session");
-const MySQLStore = require("express-mysql-session")(session);
+const SequelizeStore = require("connect-session-sequelize")(session.Store);
+const models = require("../models/connector");
 
 function setupSession(app) {
-  const sessionStore = new MySQLStore({
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
+  const sessionStore = new SequelizeStore({
+    db: models.sequelize,
+    tableName: "session",
+  });
+
+  sessionStore.sync().catch((err) => {
+    console.error("Session store sync failed:", err.message);
   });
 
   app.use(
     session({
       name: "sid",
-      secret: process.env.SESSION_SECRET,
+      secret: process.env.SESSION_SECRET || "development-session-secret",
       store: sessionStore,
       resave: false,
       saveUninitialized: false,
