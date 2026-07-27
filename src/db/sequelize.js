@@ -1,5 +1,6 @@
 const { Sequelize } = require("sequelize");
 const mysql2 = require("mysql2");
+const pg = require("pg");
 
 function hasDatabaseUrl() {
   return Boolean(
@@ -21,6 +22,7 @@ function createSequelize() {
   if (hasDatabaseUrl()) {
     return new Sequelize(process.env.DATABASE_URL, {
       dialect: "postgres",
+      dialectModule: pg,
       dialectOptions: {
         ssl: sslOptions(),
       },
